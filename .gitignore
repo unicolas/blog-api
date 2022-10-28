@@ -1,2 +1,4 @@
 .stack-work/
 *~
+.devcontainer/library-scripts/
+.devcontainer/library-scripts/*
