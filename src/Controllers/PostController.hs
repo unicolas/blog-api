@@ -12,11 +12,13 @@ import Dto.PostDto (PostDto)
 import qualified Dto.PostDto as PostDto
 import Models.Post (Post)
 import Models.Types.Id (Id)
+import Models.User (User)
 import qualified Servant as Http (Get, Post)
 import Servant
   ( Capture
   , Handler
   , JSON
+  , QueryParam
   , ReqBody
   , ServerError(..)
   , err404
@@ -38,11 +40,13 @@ type Base = "posts"
 
 -- GET /posts
 type GetPosts = Base
+  :> QueryParam "authorId" (Id User)
   :> Http.Get '[JSON] [PostDto]
 
-getPosts :: Handler [PostDto]
-getPosts = liftIO $ do
-  posts <- withDatabase PostStore.findAll
+getPosts :: Maybe (Id User) -> Handler [PostDto]
+getPosts maybeId = liftIO $ do
+  posts <- withDatabase
+    $ maybe PostStore.findAll PostStore.findByAuthor maybeId
   pure $ PostDto.fromEntity <$> posts
 
 -- GET /posts/:postId

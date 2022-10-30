@@ -12,6 +12,7 @@ import Database.PostgreSQL.Simple (Only(fromOnly), execute, query, query_)
 import Models.Post (Post(..))
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
+import Models.User (User)
 import Stores.Types.Database (Database, connection)
 
 class Monad m => PostStore m where
@@ -19,6 +20,7 @@ class Monad m => PostStore m where
   findAll :: m [Entity Post]
   save :: Post -> m (Maybe (Id Post))
   delete :: Id Post -> m ()
+  findByAuthor :: Id User -> m [Entity Post]
 
 instance PostStore Database where
   find :: Id Post -> Database (Maybe (Entity Post))
@@ -51,3 +53,11 @@ instance PostStore Database where
     let sql = "DELETE FROM posts WHERE id = ?"
     conn <- connection
     void $ execute conn sql [idPost]
+
+  findByAuthor :: Id User -> Database [Entity Post]
+  findByAuthor idAuthor = liftIO $ do
+    let sql = "SELECT id, title, content, user_id, created_at, updated_at \
+            \  FROM posts \
+            \  WHERE user_id = ?"
+    conn <- connection
+    query conn sql [idAuthor]
