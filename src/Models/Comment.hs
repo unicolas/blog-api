@@ -8,6 +8,7 @@ import Data.Time (UTCTime)
 import Database.PostgreSQL.Simple (FromRow, ToRow)
 import GHC.Generics (Generic)
 import Models.Post (Post)
+import Models.User (User)
 import Stores.Types.Id (Id)
 
 data Comment = Comment
@@ -16,5 +17,6 @@ data Comment = Comment
   , createdAt :: !UTCTime
   , updatedAt :: !UTCTime
   , postId :: Id Post
+  , userId :: Id User
   }
   deriving (Show, Generic, FromRow, ToRow)

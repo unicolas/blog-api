@@ -33,11 +33,13 @@ library
       Dto.PostDto
       Models.Comment
       Models.Post
+      Models.User
       Stores.CommentStore
       Stores.PostStore
       Stores.Types.Database
       Stores.Types.Entity
       Stores.Types.Id
+      Stores.UserStore
   other-modules:
       Paths_blog_api
   hs-source-dirs:

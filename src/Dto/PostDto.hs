@@ -17,13 +17,25 @@ data PostDto = PostDto
   { postId :: !UUID
   , title :: !Text
   , content :: !Text
+  , authorId :: !UUID
   , createdAt :: !UTCTime
   , updatedAt :: !UTCTime
   }
   deriving (Show, Generic, FromJSON, ToJSON)
 
 fromEntity :: Entity Post -> PostDto
-fromEntity (Entity (Id uuid) Post {..}) = PostDto {postId = uuid, ..}
+fromEntity (Entity (Id pid) post) = fromPost post
+  where
+    fromPost
+      Post
+        { userId = Id aid
+        , ..
+        }
+      = PostDto
+        { postId = pid
+        , authorId = aid
+        , ..
+        }
 
 toPost :: PostDto -> Post
-toPost PostDto {..} = Post {..}
+toPost PostDto {authorId = uuid, ..} = Post {userId = Id uuid, ..}

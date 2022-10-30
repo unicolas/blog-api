@@ -20,15 +20,35 @@ data CommentDto = CommentDto
   , createdAt :: !UTCTime
   , updatedAt :: !UTCTime
   , postId :: !UUID
+  , authorId :: !UUID
   }
   deriving (Show, Generic, FromJSON, ToJSON)
 
 fromEntity :: Entity Comment -> CommentDto
-fromEntity (Entity (Id cuuid) Comment {postId = (Id puuid), ..}) = CommentDto
-  { commentId = cuuid
-  , postId = puuid
-  , ..
-  }
+fromEntity (Entity (Id cid) comment) = fromComment comment
+  where
+    fromComment
+      Comment
+        { postId = (Id pid)
+        , userId = (Id aid)
+        , ..
+        }
+      = CommentDto
+        { commentId = cid
+        , postId = pid
+        , authorId = aid
+        , ..
+        }
 
 toComment :: CommentDto -> Comment
-toComment CommentDto {postId = uuid, ..} = Comment {postId = Id uuid, ..}
+toComment
+  CommentDto
+    { postId = pid
+    , authorId = aid
+    , ..
+    }
+  = Comment
+    { postId = Id pid
+    , userId = Id aid
+    , ..
+    }

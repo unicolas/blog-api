@@ -26,24 +26,28 @@ class Monad m => CommentStore m where
 instance CommentStore Database where
   find :: Id Comment -> Database (Maybe (Entity Comment))
   find idComment = liftIO $ do
-    let sql = "SELECT * FROM comments WHERE id = ?"
+    let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
+            \  FROM comments \
+            \  WHERE id = ?"
     conn <- connection
     comments <- query conn sql [idComment]
     pure $ listToMaybe comments
 
   findAll :: Database [Entity Comment]
   findAll = liftIO $ do
-    let sql = "SELECT * FROM comments"
+    let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
+            \  FROM comments"
     conn <- connection
     query_ conn sql
 
   save :: Comment -> Database (Maybe (Id Comment))
   save comment = liftIO $ do
-    let sql = "INSERT INTO comments (id, title, content, created_at, updated_at, post_id)"
-          <> " VALUES (gen_random_uuid(), ?, ?, now(), now(), ?)"
-          <> " RETURNING id"
+    let sql = "INSERT INTO comments \
+            \  (id, title, content, created_at, updated_at, post_id, user_id) \
+            \  VALUES (gen_random_uuid(), ?, ?, now(), now(), ?, ?) \
+            \  RETURNING id"
     conn <- connection
-    ids <- query conn sql (title comment, content comment, postId comment)
+    ids <- query conn sql (title comment, content comment, postId comment, userId comment)
     pure $ listToMaybe $ fromOnly <$> ids
 
   delete :: Id Comment -> Database ()

@@ -23,24 +23,27 @@ class Monad m => PostStore m where
 instance PostStore Database where
   find :: Id Post -> Database (Maybe (Entity Post))
   find idPost = liftIO $ do
-    let sql = "SELECT * FROM posts WHERE id = ?"
+    let sql = "SELECT id, title, content, user_id, created_at, updated_at \
+            \  FROM posts \
+            \  WHERE id = ?"
     conn <- connection
     posts <- query conn sql [idPost]
     pure $ listToMaybe posts
 
   findAll :: Database [Entity Post]
   findAll = liftIO $ do
-    let sql = "SELECT * FROM posts"
+    let sql = "SELECT id, title, content, user_id, created_at, updated_at \
+            \  FROM posts"
     conn <- connection
     query_ conn sql
 
   save :: Post -> Database (Maybe (Id Post))
   save post = liftIO $ do
-    let sql = "INSERT INTO posts (id, title, content, created_at, updated_at)"
-          <> " VALUES (gen_random_uuid(), ?, ?, now(), now())"
-          <> " RETURNING id"
+    let sql = "INSERT INTO posts (id, title, content, created_at, updated_at, user_id) \
+            \  VALUES (gen_random_uuid(), ?, ?, now(), now(), ?) \
+            \  RETURNING id"
     conn <- connection
-    ids <- query conn sql (title post, content post)
+    ids <- query conn sql (title post, content post, userId post)
     pure $ listToMaybe $ fromOnly <$> ids
 
   delete :: Id Post -> Database ()
