@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE MonadComprehensions #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -12,9 +11,9 @@ import Data.Maybe (listToMaybe)
 import Database.PostgreSQL.Simple (execute, fromOnly, query, query_)
 import Models.Comment (Comment(..))
 import Models.Post (Post)
+import Models.Types.Entity (Entity)
+import Models.Types.Id (Id)
 import Stores.Types.Database (Database, connection)
-import Stores.Types.Entity (Entity)
-import Stores.Types.Id (Id)
 
 class Monad m => CommentStore m where
   find :: Id Comment -> m (Maybe (Entity Comment))

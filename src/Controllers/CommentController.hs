@@ -11,6 +11,7 @@ import Dto.CommentDto (CommentDto)
 import qualified Dto.CommentDto as CommentDto
 import Models.Comment (Comment)
 import Models.Post (Post)
+import Models.Types.Id (Id)
 import qualified Servant as Http (Get, Post)
 import Servant
   ( Capture
@@ -28,7 +29,6 @@ import Servant.API (QueryParam)
 import Servant.Server (Server)
 import qualified Stores.CommentStore as CommentStore
 import Stores.Types.Database (Database(withDatabase))
-import Stores.Types.Id (Id)
 
 type Routes = GetComments :<|> GetComment :<|> CreateComment
 

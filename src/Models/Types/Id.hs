@@ -2,7 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 
-module Stores.Types.Id (Id(..)) where
+module Models.Types.Id (Id(..)) where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)

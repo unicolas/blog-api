@@ -8,8 +8,8 @@ import Data.Time (UTCTime)
 import Database.PostgreSQL.Simple (FromRow, ToRow)
 import GHC.Generics (Generic)
 import Models.Post (Post)
+import Models.Types.Id (Id)
 import Models.User (User)
-import Stores.Types.Id (Id)
 
 data Comment = Comment
   { title :: !Text

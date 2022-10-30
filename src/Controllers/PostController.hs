@@ -11,6 +11,7 @@ import qualified Data.Aeson as Aeson
 import Dto.PostDto (PostDto)
 import qualified Dto.PostDto as PostDto
 import Models.Post (Post)
+import Models.Types.Id (Id)
 import qualified Servant as Http (Get, Post)
 import Servant
   ( Capture
@@ -27,7 +28,6 @@ import Servant
 import Servant.Server (Server)
 import qualified Stores.PostStore as PostStore
 import Stores.Types.Database (Database(withDatabase))
-import Stores.Types.Id (Id)
 
 type Routes = GetPosts :<|> GetPost :<|> CreatePost
 

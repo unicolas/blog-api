@@ -1,9 +1,9 @@
 {-# LANGUAGE InstanceSigs #-}
 
-module Stores.Types.Entity (Entity(..)) where
+module Models.Types.Entity (Entity(..)) where
 
 import qualified Database.PostgreSQL.Simple.FromRow as Postgres
-import Stores.Types.Id (Id(..))
+import Models.Types.Id (Id(..))
 
 data Entity model = Entity (Id model) model
   deriving (Show, Eq)

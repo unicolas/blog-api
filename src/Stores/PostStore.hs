@@ -10,9 +10,9 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Data.Maybe (listToMaybe)
 import Database.PostgreSQL.Simple (Only(fromOnly), execute, query, query_)
 import Models.Post (Post(..))
+import Models.Types.Entity (Entity)
+import Models.Types.Id (Id)
 import Stores.Types.Database (Database, connection)
-import Stores.Types.Entity (Entity(..))
-import Stores.Types.Id (Id(..))
 
 class Monad m => PostStore m where
   find :: Id Post -> m (Maybe (Entity Post))

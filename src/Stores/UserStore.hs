@@ -10,10 +10,10 @@ import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Data.Maybe (listToMaybe)
 import Database.PostgreSQL.Simple (execute, fromOnly, query)
+import Models.Types.Entity (Entity)
+import Models.Types.Id (Id)
 import Models.User (User(..))
 import Stores.Types.Database (Database, connection)
-import Stores.Types.Entity (Entity)
-import Stores.Types.Id (Id)
 
 class Monad m => UserStore m where
   find :: Id User -> m (Maybe (Entity User))

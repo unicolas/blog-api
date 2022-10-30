@@ -10,8 +10,8 @@ import Data.Time (UTCTime)
 import Data.UUID (UUID)
 import GHC.Generics (Generic)
 import Models.Post (Post(..))
-import Stores.Types.Entity (Entity(..))
-import Stores.Types.Id (Id(..))
+import Models.Types.Entity (Entity(..))
+import Models.Types.Id (Id(..))
 
 data PostDto = PostDto
   { postId :: !UUID
