@@ -5,7 +5,7 @@
 -- Dumped from database version 14.5 (Debian 14.5-2.pgdg110+2)
 -- Dumped by pg_dump version 14.4
 
--- Started on 2022-10-29 22:48:57
+-- Started on 2022-11-09 22:24:35
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -52,6 +52,17 @@ CREATE TABLE public.posts (
 
 
 --
+-- TOC entry 212 (class 1259 OID 24622)
+-- Name: user_credentials; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_credentials (
+    user_id uuid NOT NULL,
+    password text NOT NULL
+);
+
+
+--
 -- TOC entry 211 (class 1259 OID 24590)
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
@@ -64,7 +75,7 @@ CREATE TABLE public.users (
 
 
 --
--- TOC entry 3178 (class 2606 OID 24583)
+-- TOC entry 3182 (class 2606 OID 24583)
 -- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -73,7 +84,7 @@ ALTER TABLE ONLY public.comments
 
 
 --
--- TOC entry 3176 (class 2606 OID 16392)
+-- TOC entry 3180 (class 2606 OID 16392)
 -- Name: posts posts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -82,7 +93,25 @@ ALTER TABLE ONLY public.posts
 
 
 --
--- TOC entry 3182 (class 2606 OID 24596)
+-- TOC entry 3191 (class 2606 OID 24628)
+-- Name: user_credentials user_credentials_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_credentials
+    ADD CONSTRAINT user_credentials_pkey PRIMARY KEY (user_id);
+
+
+--
+-- TOC entry 3186 (class 2606 OID 24636)
+-- Name: users username_u; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT username_u UNIQUE (username);
+
+
+--
+-- TOC entry 3188 (class 2606 OID 24596)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -91,7 +120,15 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3179 (class 1259 OID 24589)
+-- TOC entry 3189 (class 1259 OID 24634)
+-- Name: fki_fk_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX fki_fk_user_id ON public.user_credentials USING btree (user_id);
+
+
+--
+-- TOC entry 3183 (class 1259 OID 24589)
 -- Name: fki_post_id_fk; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -99,7 +136,7 @@ CREATE INDEX fki_post_id_fk ON public.comments USING btree (post_id);
 
 
 --
--- TOC entry 3180 (class 1259 OID 24616)
+-- TOC entry 3184 (class 1259 OID 24616)
 -- Name: fki_user_id_fk; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -107,7 +144,16 @@ CREATE INDEX fki_user_id_fk ON public.comments USING btree (user_id);
 
 
 --
--- TOC entry 3184 (class 2606 OID 24584)
+-- TOC entry 3195 (class 2606 OID 24629)
+-- Name: user_credentials fk_user_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_credentials
+    ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES public.users(id) NOT VALID;
+
+
+--
+-- TOC entry 3193 (class 2606 OID 24584)
 -- Name: comments post_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -116,7 +162,7 @@ ALTER TABLE ONLY public.comments
 
 
 --
--- TOC entry 3185 (class 2606 OID 24611)
+-- TOC entry 3194 (class 2606 OID 24611)
 -- Name: comments user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -125,7 +171,7 @@ ALTER TABLE ONLY public.comments
 
 
 --
--- TOC entry 3183 (class 2606 OID 24617)
+-- TOC entry 3192 (class 2606 OID 24617)
 -- Name: posts user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -133,7 +179,7 @@ ALTER TABLE ONLY public.posts
     ADD CONSTRAINT user_id_fk FOREIGN KEY (user_id) REFERENCES public.users(id) NOT VALID;
 
 
--- Completed on 2022-10-29 22:48:57
+-- Completed on 2022-11-09 22:24:35
 
 --
 -- PostgreSQL database dump complete

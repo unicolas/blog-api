@@ -2,3 +2,4 @@
 *~
 .devcontainer/library-scripts/
 .devcontainer/library-scripts/*
+.env

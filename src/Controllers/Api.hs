@@ -1,18 +1,27 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Controllers.Api (api, apiServer) where
+module Controllers.Api (api, server) where
 
+import qualified Controllers.AuthController as AuthController
 import qualified Controllers.CommentController as CommentController
 import qualified Controllers.PostController as PostController
 import Data.Data (Proxy(Proxy))
-import Servant (Server)
-import Servant.API (type (:<|>)(..))
+import Models.User (User(..))
+import Servant (Server, err401, type (:<|>)(..), type (:>))
+import qualified Servant.Auth.Server as Sas
 
-type Controllers = PostController.Routes :<|> CommentController.Routes
+type SecuredRoutes = PostController.Routes :<|> CommentController.Routes
 
-apiServer :: Server Controllers
-apiServer = PostController.handlers :<|> CommentController.handlers
+securedHandlers :: Sas.AuthResult User -> Server SecuredRoutes
+securedHandlers (Sas.Authenticated _)
+  = PostController.handlers :<|> CommentController.handlers
+securedHandlers _ = Sas.throwAll err401
 
-api :: Proxy Controllers
+type Api auths = Sas.Auth auths User :> SecuredRoutes :<|> AuthController.Login
+
+server :: Sas.CookieSettings -> Sas.JWTSettings -> Server (Api auths)
+server cs jwts = securedHandlers :<|> AuthController.login cs jwts
+
+api :: Proxy (Api '[Sas.JWT])
 api = Proxy

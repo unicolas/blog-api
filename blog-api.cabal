@@ -26,13 +26,16 @@ source-repository head
 library
   exposed-modules:
       Controllers.Api
+      Controllers.AuthController
       Controllers.CommentController
       Controllers.PostController
       Controllers.Types.Error
       Dto.CommentDto
       Dto.PostDto
       Models.Comment
+      Models.Credentials
       Models.Post
+      Models.Types.Aggregate
       Models.Types.Entity
       Models.Types.Id
       Models.User
@@ -48,12 +51,16 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , dotenv
+    , password
     , postgresql-simple
     , servant
+    , servant-auth-server
     , servant-client
     , servant-server
     , text
     , time
+    , utf8-string
     , uuid
     , wai
     , warp
@@ -70,12 +77,16 @@ executable blog-api-exe
       aeson
     , base >=4.7 && <5
     , blog-api
+    , dotenv
+    , password
     , postgresql-simple
     , servant
+    , servant-auth-server
     , servant-client
     , servant-server
     , text
     , time
+    , utf8-string
     , uuid
     , wai
     , warp
@@ -93,12 +104,16 @@ test-suite blog-api-test
       aeson
     , base >=4.7 && <5
     , blog-api
+    , dotenv
+    , password
     , postgresql-simple
     , servant
+    , servant-auth-server
     , servant-client
     , servant-server
     , text
     , time
+    , utf8-string
     , uuid
     , wai
     , warp

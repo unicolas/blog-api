@@ -22,13 +22,17 @@ description:         Please see the README on GitHub at <https://github.com/unic
 dependencies:
 - aeson
 - base >= 4.7 && < 5
+- dotenv
+- password
 - postgresql-simple
 - servant
+- servant-auth-server
 - servant-client
 - servant-server
 - text
 - time
 - uuid
+- utf8-string
 - wai
 - warp
 
