@@ -5,7 +5,9 @@
 
 module Controllers.AuthController (Login, login) where
 
+import App (App)
 import Control.Monad (when)
+import Control.Monad.Catch (MonadThrow(throwM))
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON)
 import qualified Data.Password.Bcrypt as Bcrypt
@@ -15,10 +17,8 @@ import Models.Credentials (Credentials)
 import qualified Models.Credentials as Credentials
 import Models.Types.Aggregate (deconstruct)
 import qualified Servant as Http (Header, Headers, NoContent(..), Post)
-import Servant (Handler, JSON, ReqBody, err401, throwError, type (:>))
+import Servant (JSON, ReqBody, ServerT, err401, type (:>))
 import qualified Servant.Auth.Server as Sas
-import Servant.Server (Server)
-import Stores.Types.Database (Database(withDatabase))
 import qualified Stores.UserStore as UserStore
 
 data LoginRequest = LoginRequest
@@ -37,20 +37,20 @@ type Login = "login"
   :> ReqBody '[JSON] LoginRequest
   :> Http.Post '[JSON] LoginHeaders
 
-login :: Sas.CookieSettings -> Sas.JWTSettings -> Server Login
+login :: Sas.CookieSettings -> Sas.JWTSettings -> ServerT Login App
 login = checkCreds
 
-checkCreds :: Sas.CookieSettings -> Sas.JWTSettings -> LoginRequest -> Handler LoginHeaders
+checkCreds :: Sas.CookieSettings -> Sas.JWTSettings -> LoginRequest -> App LoginHeaders
 checkCreds cookieSettings jwtSettings (LoginRequest reqUser reqPassword) = do
-  maybeAggr <- liftIO $ withDatabase $ UserStore.findWithCredentials reqUser
+  maybeAggr <- UserStore.findWithCredentials reqUser
   (user, creds) <- case maybeAggr of
-    Nothing -> throwError err401
+    Nothing -> throwM err401
     Just aggregate -> pure $ deconstruct aggregate
   when (Bcrypt.PasswordCheckFail == checkPassword reqPassword creds)
-    $ throwError err401
+    $ throwM err401
   maybeCookies <- liftIO $ Sas.acceptLogin cookieSettings jwtSettings user
   case maybeCookies of
-    Nothing -> throwError err401
+    Nothing -> throwM err401
     Just cookies -> pure $ cookies Http.NoContent
 
 checkPassword :: Text -> Credentials -> Bcrypt.PasswordCheck

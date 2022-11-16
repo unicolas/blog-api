@@ -1,22 +1,24 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE MonadComprehensions #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Stores.UserStore (UserStore(..)) where
 
+import App (App)
+import AppContext (AppContext(..))
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.Reader.Class (asks)
 import Data.Maybe (listToMaybe)
+import Data.Pool (withResource)
 import Data.Text (Text)
 import Database.PostgreSQL.Simple (execute, fromOnly, query)
+import DatabaseContext (DatabaseContext(..))
 import Models.Credentials (Credentials)
 import Models.Types.Aggregate (Aggregate)
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
 import Models.User (User(..))
-import Stores.Types.Database (Database, connection)
 
 class Monad m => UserStore m where
   find :: Id User -> m (Maybe (Entity User))
@@ -24,35 +26,36 @@ class Monad m => UserStore m where
   delete :: Id User -> m ()
   findWithCredentials :: Text -> m (Maybe (Aggregate User Credentials))
 
-instance UserStore Database where
-  find :: Id User -> Database (Maybe (Entity User))
-  find idUser = liftIO $ do
+instance UserStore App where
+  find :: Id User -> App (Maybe (Entity User))
+  find idUser = do
     let sql = "SELECT * FROM users WHERE id = ?"
-    conn <- connection
-    users <- query conn sql [idUser]
+    pool <- asks $ connectionPool . databaseContext
+    users <- liftIO $ withResource pool $ \conn -> query conn sql [idUser]
     pure $ listToMaybe users
 
-  save :: User -> Database (Maybe (Id User))
-  save user = liftIO $ do
+  save :: User -> App (Maybe (Id User))
+  save user = do
     let sql = "INSERT INTO users (id, username, email) \
             \  VALUES (gen_random_uuid(), ?, ?) \
             \  RETURNING id"
-    conn <- connection
-    ids <- query conn sql (username user, email user)
+    pool <- asks $ connectionPool . databaseContext
+    ids <- liftIO $ withResource pool
+      $ \conn -> query conn sql (username user, email user)
     pure $ listToMaybe $ fromOnly <$> ids
 
-  delete :: Id User -> Database ()
-  delete idUser = liftIO $ do
+  delete :: Id User -> App ()
+  delete idUser = do
     let sql = "DELETE FROM users WHERE id = ?"
-    conn <- connection
-    void $ execute conn sql [idUser]
+    pool <- asks $ connectionPool . databaseContext
+    void $ liftIO $ withResource pool $ \conn -> execute conn sql [idUser]
 
-  findWithCredentials :: Text -> Database (Maybe (Aggregate User Credentials))
-  findWithCredentials aUsername = liftIO $ do
+  findWithCredentials :: Text -> App (Maybe (Aggregate User Credentials))
+  findWithCredentials aUsername = do
     let sql = "SELECT id, username, email, user_id, password \
             \ FROM users \
             \ INNER JOIN user_credentials ON id = user_id \
             \ WHERE username = ?"
-    conn <- connection
-    users <- query conn sql [aUsername]
+    pool <- asks $ connectionPool . databaseContext
+    users <- liftIO $ withResource pool $ \conn -> query conn sql [aUsername]
     pure $ listToMaybe users

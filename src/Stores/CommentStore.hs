@@ -1,19 +1,22 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Stores.CommentStore (CommentStore (..)) where
 
+import App (App)
+import AppContext (AppContext(..))
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.Reader.Class (asks)
 import Data.Maybe (listToMaybe)
+import Data.Pool (withResource)
 import Database.PostgreSQL.Simple (execute, fromOnly, query, query_)
+import DatabaseContext (DatabaseContext(..))
 import Models.Comment (Comment(..))
 import Models.Post (Post)
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
-import Stores.Types.Database (Database, connection)
 
 class Monad m => CommentStore m where
   find :: Id Comment -> m (Maybe (Entity Comment))
@@ -22,41 +25,42 @@ class Monad m => CommentStore m where
   delete :: Id Comment -> m ()
   findByPost :: Id Post -> m [Entity Comment]
 
-instance CommentStore Database where
-  find :: Id Comment -> Database (Maybe (Entity Comment))
-  find idComment = liftIO $ do
+instance CommentStore App where
+  find :: Id Comment -> App (Maybe (Entity Comment))
+  find idComment = do
     let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
             \  FROM comments \
             \  WHERE id = ?"
-    conn <- connection
-    comments <- query conn sql [idComment]
+    pool <- asks $ connectionPool . databaseContext
+    comments <- liftIO $ withResource pool $ \conn -> query conn sql [idComment]
     pure $ listToMaybe comments
 
-  findAll :: Database [Entity Comment]
-  findAll = liftIO $ do
+  findAll :: App [Entity Comment]
+  findAll = do
     let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
             \  FROM comments"
-    conn <- connection
-    query_ conn sql
+    pool <- asks $ connectionPool . databaseContext
+    liftIO $ withResource pool $ \conn -> query_ conn sql
 
-  save :: Comment -> Database (Maybe (Id Comment))
-  save comment = liftIO $ do
+  save :: Comment -> App (Maybe (Id Comment))
+  save comment = do
     let sql = "INSERT INTO comments \
             \  (id, title, content, created_at, updated_at, post_id, user_id) \
             \  VALUES (gen_random_uuid(), ?, ?, now(), now(), ?, ?) \
             \  RETURNING id"
-    conn <- connection
-    ids <- query conn sql (title comment, content comment, postId comment, userId comment)
+    pool <- asks $ connectionPool . databaseContext
+    ids <- liftIO $ withResource pool
+      $ \conn -> query conn sql (title comment, content comment, postId comment, userId comment)
     pure $ listToMaybe $ fromOnly <$> ids
 
-  delete :: Id Comment -> Database ()
-  delete commentId = liftIO $ do
+  delete :: Id Comment -> App ()
+  delete commentId = do
     let sql = "DELETE FROM comments WHERE id = ?"
-    conn <- connection
-    void $ execute conn sql [commentId]
+    pool <- asks $ connectionPool . databaseContext
+    void $ liftIO $ withResource pool $ \conn -> execute conn sql [commentId]
 
-  findByPost :: Id Post -> Database [Entity Comment]
-  findByPost idPost = liftIO $ do
+  findByPost :: Id Post -> App [Entity Comment]
+  findByPost idPost = do
     let sql = "SELECT * FROM comments WHERE post_id = ?"
-    conn <- connection
-    query conn sql [idPost]
+    pool <- asks $ connectionPool . databaseContext
+    liftIO $ withResource pool $ \conn -> query conn sql [idPost]

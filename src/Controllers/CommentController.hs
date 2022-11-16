@@ -4,7 +4,8 @@
 
 module Controllers.CommentController (Routes, handlers) where
 
-import Control.Monad.IO.Class (liftIO)
+import App (App)
+import Control.Monad.Catch (MonadThrow(throwM))
 import Controllers.Types.Error (Error(..))
 import qualified Data.Aeson as Aeson
 import Dto.CommentDto (CommentDto)
@@ -15,24 +16,21 @@ import Models.Types.Id (Id)
 import qualified Servant as Http (Get, Post)
 import Servant
   ( Capture
-  , Handler
   , JSON
   , ReqBody
   , ServerError(..)
+  , ServerT
   , err404
   , err500
-  , throwError
   , type (:<|>)(..)
   , type (:>)
   )
 import Servant.API (QueryParam)
-import Servant.Server (Server)
 import qualified Stores.CommentStore as CommentStore
-import Stores.Types.Database (Database(withDatabase))
 
 type Routes = GetComments :<|> GetComment :<|> CreateComment
 
-handlers :: Server Routes
+handlers :: ServerT Routes App
 handlers = getComments :<|> getComment :<|> createComment
 
 type Base = "comments"
@@ -42,10 +40,9 @@ type GetComments = Base
   :> QueryParam "postId" (Id Post)
   :> Http.Get '[JSON] [CommentDto]
 
-getComments :: Maybe (Id Post) -> Handler [CommentDto]
-getComments maybeId = liftIO $ do
-  comments <- withDatabase
-    $ maybe CommentStore.findAll CommentStore.findByPost maybeId
+getComments :: Maybe (Id Post) -> App [CommentDto]
+getComments maybeId = do
+  comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId
   pure $ CommentDto.fromEntity <$> comments
 
 -- GET /comments/:commentId
@@ -53,13 +50,14 @@ type GetComment = Base
   :> Capture "comment" (Id Comment)
   :> Http.Get '[JSON] CommentDto
 
-getComment :: Id Comment -> Handler CommentDto
+-- getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
+getComment :: Id Comment -> App CommentDto
 getComment commentId = do
-  maybeComment <- liftIO $ withDatabase $ CommentStore.find commentId
+  maybeComment <- CommentStore.find commentId
   let maybeDto = CommentDto.fromEntity <$> maybeComment
   case maybeDto of
     Just dto -> pure dto
-    Nothing -> throwError err404
+    Nothing -> throwM err404
       { errBody = Aeson.encode $ Error "Could not find comment with such ID."
       , errHeaders = [("Content-Type", "application/json")]
       }
@@ -69,14 +67,12 @@ type CreateComment = Base
   :> ReqBody '[JSON] CommentDto
   :> Http.Post '[JSON] (Id Comment)
 
-createComment :: CommentDto -> Handler (Id Comment)
+createComment :: CommentDto -> App (Id Comment)
 createComment comment = do
-  maybeId <- liftIO
-    $ withDatabase
-    $ CommentStore.save (CommentDto.toComment comment)
+  maybeId <- CommentStore.save (CommentDto.toComment comment)
   case maybeId of
     Just commentId -> pure commentId
-    Nothing -> throwError err500
+    Nothing -> throwM err500
       { errBody = Aeson.encode $ Error "Failed to create comment."
       , errHeaders = [("Content-Type", "application/json")]
       }

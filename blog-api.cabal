@@ -25,11 +25,14 @@ source-repository head
 
 library
   exposed-modules:
+      App
+      AppContext
       Controllers.Api
       Controllers.AuthController
       Controllers.CommentController
       Controllers.PostController
       Controllers.Types.Error
+      DatabaseContext
       Dto.CommentDto
       Dto.PostDto
       Models.Comment
@@ -41,7 +44,6 @@ library
       Models.User
       Stores.CommentStore
       Stores.PostStore
-      Stores.Types.Database
       Stores.UserStore
   other-modules:
       Paths_blog_api
@@ -52,8 +54,11 @@ library
       aeson
     , base >=4.7 && <5
     , dotenv
+    , exceptions
+    , mtl
     , password
     , postgresql-simple
+    , resource-pool
     , servant
     , servant-auth-server
     , servant-client
@@ -78,8 +83,11 @@ executable blog-api-exe
     , base >=4.7 && <5
     , blog-api
     , dotenv
+    , exceptions
+    , mtl
     , password
     , postgresql-simple
+    , resource-pool
     , servant
     , servant-auth-server
     , servant-client
@@ -105,8 +113,11 @@ test-suite blog-api-test
     , base >=4.7 && <5
     , blog-api
     , dotenv
+    , exceptions
+    , mtl
     , password
     , postgresql-simple
+    , resource-pool
     , servant
     , servant-auth-server
     , servant-client

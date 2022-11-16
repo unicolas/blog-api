@@ -1,24 +1,44 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main (main) where
 
-import Configuration.Dotenv (defaultConfig, loadFile)
+import qualified App
+import AppContext (AppContext(..))
+import qualified Configuration.Dotenv as Dotenv
 import Controllers.Api (api, server)
 import Data.ByteString.UTF8 (fromString)
+import Data.Data (Proxy)
+import Data.Maybe (fromMaybe)
+import Data.Proxy (Proxy(..))
+import DatabaseContext (makeDatabaseContext)
 import Network.Wai.Handler.Warp (run)
-import Servant (Context(..), serveWithContext)
+import Servant (Context(..), hoistServerWithContext, serveWithContext)
+import qualified Servant.Auth.Server as Sas
 import Servant.Auth.Server
   (defaultCookieSettings, defaultJWTSettings, fromSecret, generateKey)
+import qualified System.Environment as Environment
+import Text.Read (readMaybe)
 
 main :: IO ()
-main = do
-  env <- loadFile defaultConfig
-  let secret = lookup "JWT_SECRET" env
-  key <- case secret of
-    Nothing -> generateKey
-    Just str -> pure $ fromSecret $ fromString str
+main = loadEnv *> do
+  conn <- Environment.getEnv "DATABASE_URL"
+  dbCtx <- makeDatabaseContext (fromString conn)
+  let ?appCtx = AppContext dbCtx
+  secret <- Environment.lookupEnv "JWT_SECRET"
+  key <- maybe generateKey (pure . fromSecret . fromString) secret
+  maybePort <- Environment.lookupEnv "APP_PORT"
+  let port = fromMaybe 8000 (maybePort >>= readMaybe)
   let
     jwtSettings = defaultJWTSettings key
-    ctx = defaultCookieSettings :. jwtSettings :. EmptyContext
-    app = serveWithContext api ctx (server defaultCookieSettings jwtSettings)
-  run 8000 app
+    cookieSettings = defaultCookieSettings
+    ctx = cookieSettings :. jwtSettings :. EmptyContext
+    ctxProxy = Proxy :: Proxy '[Sas.CookieSettings, Sas.JWTSettings]
+    serverWithCtx = server cookieSettings jwtSettings
+    hoistServer = hoistServerWithContext api ctxProxy App.transform serverWithCtx
+    app = serveWithContext api ctx hoistServer
+  run port app
+
+loadEnv :: IO [(String, String)]
+loadEnv = Dotenv.loadFile Dotenv.defaultConfig

@@ -23,8 +23,11 @@ dependencies:
 - aeson
 - base >= 4.7 && < 5
 - dotenv
+- exceptions
+- mtl
 - password
 - postgresql-simple
+- resource-pool
 - servant
 - servant-auth-server
 - servant-client
