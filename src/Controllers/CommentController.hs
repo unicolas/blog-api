@@ -4,7 +4,6 @@
 
 module Controllers.CommentController (Routes, handlers) where
 
-import App (App)
 import Control.Monad.Catch (MonadThrow(throwM))
 import Controllers.Types.Error (Error(..))
 import qualified Data.Aeson as Aeson
@@ -27,10 +26,11 @@ import Servant
   )
 import Servant.API (QueryParam)
 import qualified Stores.CommentStore as CommentStore
+import Stores.CommentStore (CommentStore)
 
 type Routes = GetComments :<|> GetComment :<|> CreateComment
 
-handlers :: ServerT Routes App
+handlers :: (MonadThrow m, CommentStore m) => ServerT Routes m
 handlers = getComments :<|> getComment :<|> createComment
 
 type Base = "comments"
@@ -40,7 +40,7 @@ type GetComments = Base
   :> QueryParam "postId" (Id Post)
   :> Http.Get '[JSON] [CommentDto]
 
-getComments :: Maybe (Id Post) -> App [CommentDto]
+getComments :: (CommentStore m) => Maybe (Id Post) -> m [CommentDto]
 getComments maybeId = do
   comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId
   pure $ CommentDto.fromEntity <$> comments
@@ -50,8 +50,7 @@ type GetComment = Base
   :> Capture "comment" (Id Comment)
   :> Http.Get '[JSON] CommentDto
 
--- getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
-getComment :: Id Comment -> App CommentDto
+getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
 getComment commentId = do
   maybeComment <- CommentStore.find commentId
   let maybeDto = CommentDto.fromEntity <$> maybeComment
@@ -67,7 +66,7 @@ type CreateComment = Base
   :> ReqBody '[JSON] CommentDto
   :> Http.Post '[JSON] (Id Comment)
 
-createComment :: CommentDto -> App (Id Comment)
+createComment :: (MonadThrow m, CommentStore m) => CommentDto -> m (Id Comment)
 createComment comment = do
   maybeId <- CommentStore.save (CommentDto.toComment comment)
   case maybeId of

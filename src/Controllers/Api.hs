@@ -21,7 +21,7 @@ securedHandlers _ = Sas.throwAll err401
 
 type Api auths = Sas.Auth auths User :> SecuredRoutes :<|> AuthController.Login
 
-server ::Sas.CookieSettings -> Sas.JWTSettings -> ServerT (Api auths) App
+server :: Sas.CookieSettings -> Sas.JWTSettings -> ServerT (Api auths) App
 server cs jwts = securedHandlers :<|> AuthController.login cs jwts
 
 api :: Proxy (Api '[Sas.JWT])

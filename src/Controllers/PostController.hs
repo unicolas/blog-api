@@ -4,7 +4,6 @@
 
 module Controllers.PostController (Routes, handlers) where
 
-import App (App)
 import Control.Monad.Catch (MonadThrow(throwM))
 import Controllers.Types.Error (Error(..))
 import qualified Data.Aeson as Aeson
@@ -27,10 +26,11 @@ import Servant
   , type (:>)
   )
 import qualified Stores.PostStore as PostStore
+import Stores.PostStore (PostStore)
 
 type Routes = GetPosts :<|> GetPost :<|> CreatePost
 
-handlers :: ServerT Routes App
+handlers :: (MonadThrow m, PostStore m) => ServerT Routes m
 handlers = getPosts :<|> getPost :<|> createPost
 
 type Base = "posts"
@@ -40,7 +40,7 @@ type GetPosts = Base
   :> QueryParam "authorId" (Id User)
   :> Http.Get '[JSON] [PostDto]
 
-getPosts :: Maybe (Id User) -> App [PostDto]
+getPosts :: (PostStore m) => Maybe (Id User) -> m [PostDto]
 getPosts maybeId = do
   posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId
   pure $ PostDto.fromEntity <$> posts
@@ -50,7 +50,7 @@ type GetPost = Base
   :> Capture "postId" (Id Post)
   :> Http.Get '[JSON] PostDto
 
-getPost :: Id Post -> App PostDto
+getPost :: (MonadThrow m, PostStore m) => Id Post -> m PostDto
 getPost postId = do
   maybePost <- PostStore.find postId
   let maybeDto = PostDto.fromEntity <$> maybePost
@@ -66,7 +66,7 @@ type CreatePost = Base
   :> ReqBody '[JSON] PostDto
   :> Http.Post '[JSON] (Id Post)
 
-createPost :: PostDto -> App (Id Post)
+createPost :: (MonadThrow m, PostStore m) => PostDto -> m (Id Post)
 createPost post = do
   maybeId <- PostStore.save $ PostDto.toPost post
   case maybeId of

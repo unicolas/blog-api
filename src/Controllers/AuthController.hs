@@ -5,10 +5,9 @@
 
 module Controllers.AuthController (Login, login) where
 
-import App (App)
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow(throwM))
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON)
 import qualified Data.Password.Bcrypt as Bcrypt
 import Data.Text (Text)
@@ -20,6 +19,7 @@ import qualified Servant as Http (Header, Headers, NoContent(..), Post)
 import Servant (JSON, ReqBody, ServerT, err401, type (:>))
 import qualified Servant.Auth.Server as Sas
 import qualified Stores.UserStore as UserStore
+import Stores.UserStore (UserStore)
 
 data LoginRequest = LoginRequest
   { username :: !Text
@@ -37,10 +37,12 @@ type Login = "login"
   :> ReqBody '[JSON] LoginRequest
   :> Http.Post '[JSON] LoginHeaders
 
-login :: Sas.CookieSettings -> Sas.JWTSettings -> ServerT Login App
+login :: (MonadThrow m, UserStore m, MonadIO m)
+  => Sas.CookieSettings -> Sas.JWTSettings -> ServerT Login m
 login = checkCreds
 
-checkCreds :: Sas.CookieSettings -> Sas.JWTSettings -> LoginRequest -> App LoginHeaders
+checkCreds :: (MonadThrow m, UserStore m, MonadIO m)
+  => Sas.CookieSettings -> Sas.JWTSettings -> LoginRequest -> m LoginHeaders
 checkCreds cookieSettings jwtSettings (LoginRequest reqUser reqPassword) = do
   maybeAggr <- UserStore.findWithCredentials reqUser
   (user, creds) <- case maybeAggr of
