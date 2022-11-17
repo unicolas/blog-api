@@ -16,7 +16,7 @@ data Comment = Comment
   , content :: !Text
   , createdAt :: !UTCTime
   , updatedAt :: !UTCTime
-  , postId :: Id Post
-  , userId :: Id User
+  , postId :: !(Id Post)
+  , userId :: !(Id User)
   }
   deriving (Show, Generic, FromRow, ToRow)

@@ -12,7 +12,7 @@ import qualified Database.PostgreSQL.Simple.ToField as Postgres
 import GHC.Generics (Generic)
 import qualified Servant
 
-newtype Id phantom = Id { unwrap :: UUID }
+newtype Id phantom = Id UUID
   deriving (Show, Eq, Ord, Generic, FromJSON, ToJSON)
 
 instance Servant.FromHttpApiData (Id phantom) where
