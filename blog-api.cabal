@@ -104,16 +104,21 @@ test-suite blog-api-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Controllers.PostControllerSpec
+      Mocks.PostStore
       Paths_blog_api
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-tool-depends:
+      hspec-discover:hspec-discover
   build-depends:
       aeson
     , base >=4.7 && <5
     , blog-api
     , dotenv
     , exceptions
+    , hspec
     , mtl
     , password
     , postgresql-simple

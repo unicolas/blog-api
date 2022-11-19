@@ -74,3 +74,6 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - blog-api
+    - hspec
+    build-tools:
+    - hspec-discover:hspec-discover

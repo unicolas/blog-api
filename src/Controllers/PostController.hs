@@ -2,7 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Controllers.PostController (Routes, handlers) where
+module Controllers.PostController
+  ( Routes
+  , handlers
+  , getPosts
+  , getPost
+  , createPost
+  ) where
 
 import Control.Monad.Catch (MonadThrow(throwM))
 import Controllers.Types.Error (Error(..))
