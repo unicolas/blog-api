@@ -51,7 +51,7 @@ instance CommentStore App where
     pool <- asks $ connectionPool . databaseContext
     ids <- liftIO $ withResource pool
       $ \conn -> query conn sql (title comment, content comment, postId comment, userId comment)
-    pure $ listToMaybe $ fromOnly <$> ids
+    pure $ fromOnly <$> listToMaybe ids
 
   delete :: Id Comment -> App ()
   delete commentId = do

@@ -42,7 +42,7 @@ instance UserStore App where
     pool <- asks $ connectionPool . databaseContext
     ids <- liftIO $ withResource pool
       $ \conn -> query conn sql (username user, email user)
-    pure $ listToMaybe $ fromOnly <$> ids
+    pure $ fromOnly <$> listToMaybe ids
 
   delete :: Id User -> App ()
   delete idUser = do

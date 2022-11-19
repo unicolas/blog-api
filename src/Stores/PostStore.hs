@@ -50,7 +50,7 @@ instance PostStore App where
     pool <- asks $ connectionPool . databaseContext
     ids <- liftIO $ withResource pool
       $ \conn -> query conn sql (title post, content post, userId post)
-    pure $ listToMaybe $ fromOnly <$> ids
+    pure $ fromOnly <$> listToMaybe ids
 
   delete :: Id Post -> App ()
   delete idPost = do
