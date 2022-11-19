@@ -21,7 +21,7 @@ data PostDto = PostDto
   , createdAt :: !UTCTime
   , updatedAt :: !UTCTime
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 fromEntity :: Entity Post -> PostDto
 fromEntity (Entity (Id pid) post) = fromPost post

@@ -22,7 +22,7 @@ data CommentDto = CommentDto
   , postId :: !UUID
   , authorId :: !UUID
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 fromEntity :: Entity Comment -> CommentDto
 fromEntity (Entity (Id cid) comment) = fromComment comment

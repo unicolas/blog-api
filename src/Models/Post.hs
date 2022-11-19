@@ -17,4 +17,4 @@ data Post = Post
   , createdAt :: !UTCTime
   , updatedAt :: !UTCTime
   }
-  deriving (Show, Generic, FromRow, ToRow)
+  deriving (Show, Eq, Generic, FromRow, ToRow)

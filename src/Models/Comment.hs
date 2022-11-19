@@ -19,4 +19,4 @@ data Comment = Comment
   , postId :: !(Id Post)
   , userId :: !(Id User)
   }
-  deriving (Show, Generic, FromRow, ToRow)
+  deriving (Show, Eq, Generic, FromRow, ToRow)
