@@ -40,7 +40,7 @@ instance PostStore App where
     let sql = "SELECT id, title, content, user_id, created_at, updated_at \
             \  FROM posts"
     pool <- asks $ connectionPool . databaseContext
-    liftIO $ withResource pool $ \conn -> query_ conn sql
+    liftIO $ withResource pool (`query_` sql)
 
   save :: Post -> App (Maybe (Id Post))
   save post = do

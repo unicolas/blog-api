@@ -40,7 +40,7 @@ instance CommentStore App where
     let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
             \  FROM comments"
     pool <- asks $ connectionPool . databaseContext
-    liftIO $ withResource pool $ \conn -> query_ conn sql
+    liftIO $ withResource pool (`query_` sql)
 
   save :: Comment -> App (Maybe (Id Comment))
   save comment = do
