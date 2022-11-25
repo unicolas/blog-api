@@ -1,43 +1,39 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
-module Mocks.PostStore (PostStore(..), Posts(..), StorageMock, runMock) where
+module Mocks.PostStore (PostStore(..)) where
 
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (StateT(..), get, gets, put)
+import Control.Monad.State (gets, modify)
+import qualified Data.Map.Strict as Map
 import Data.UUID.V4 (nextRandom)
+import Mocks.StorageMock (StorageMock)
+import qualified Mocks.StorageMock as StorageMock
 import Models.Post (Post(..))
 import Models.Types.Entity (Entity(Entity))
 import Models.Types.Id (Id(..))
 import Models.User (User)
 import Stores.PostStore (PostStore(..))
 
-newtype Posts = Posts { unwrap :: [(Id Post, Entity Post)] }
-
-type StorageMock = StateT Posts IO
-
-runMock :: StorageMock a -> Posts -> IO a
-runMock st posts = fst <$> runStateT st posts
-
 instance PostStore StorageMock where
   find :: Id Post -> StorageMock (Maybe (Entity Post))
-  find postId = gets (lookup postId . unwrap)
+  find postId = gets (Map.lookup postId . StorageMock.posts)
 
   findAll :: StorageMock [Entity Post]
-  findAll = gets (fmap snd . unwrap)
+  findAll = gets (Map.elems . StorageMock.posts)
 
   save :: Post -> StorageMock (Maybe (Id Post))
   save post = do
-    posts <- get
     postId <- liftIO (Id <$> nextRandom)
-    put $ Posts $ (postId, Entity postId post) : unwrap posts
+    posts <- gets (Map.insert postId (Entity postId post) . StorageMock.posts)
+    modify (\s -> s {StorageMock.posts = posts})
     pure $ Just postId
 
   delete :: Id Post -> StorageMock ()
   delete _ = undefined
 
   findByAuthor :: Id User -> StorageMock [Entity Post]
-  findByAuthor author =
-    gets (\posts -> [ post | post <- snd <$> unwrap posts, authored post ])
+  findByAuthor author = gets (filter authored . Map.elems . StorageMock.posts)
     where
       authored (Entity _ post) = author == userId post

@@ -34,6 +34,7 @@ library
       Controllers.Types.Error
       DatabaseContext
       Dto.CommentDto
+      Dto.NewPostDto
       Dto.PostDto
       Models.Comment
       Models.Credentials
@@ -104,8 +105,10 @@ test-suite blog-api-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Constructors
       Controllers.PostControllerSpec
       Mocks.PostStore
+      Mocks.StorageMock
       Paths_blog_api
   hs-source-dirs:
       test
@@ -116,6 +119,7 @@ test-suite blog-api-test
       aeson
     , base >=4.7 && <5
     , blog-api
+    , containers
     , dotenv
     , exceptions
     , hspec

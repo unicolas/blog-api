@@ -13,6 +13,8 @@ module Controllers.PostController
 import Control.Monad.Catch (MonadThrow(throwM))
 import Controllers.Types.Error (Error(..))
 import qualified Data.Aeson as Aeson
+import Dto.NewPostDto (NewPostDto)
+import qualified Dto.NewPostDto as NewPostDto
 import Dto.PostDto (PostDto)
 import qualified Dto.PostDto as PostDto
 import Models.Post (Post)
@@ -69,12 +71,12 @@ getPost postId = do
 
 -- POST /posts
 type CreatePost = Base
-  :> ReqBody '[JSON] PostDto
+  :> ReqBody '[JSON] NewPostDto
   :> Http.Post '[JSON] (Id Post)
 
-createPost :: (MonadThrow m, PostStore m) => PostDto -> m (Id Post)
+createPost :: (MonadThrow m, PostStore m) => NewPostDto -> m (Id Post)
 createPost post = do
-  maybeId <- PostStore.save $ PostDto.toPost post
+  maybeId <- PostStore.save $ NewPostDto.toPost post
   case maybeId of
     Just postId -> pure postId
     Nothing -> throwM err500
