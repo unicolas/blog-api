@@ -110,6 +110,7 @@ test-suite blog-api-test
       Mocks.CommentStore
       Mocks.PostStore
       Mocks.StorageMock
+      Mocks.UserStore
       Paths_blog_api
   hs-source-dirs:
       test
