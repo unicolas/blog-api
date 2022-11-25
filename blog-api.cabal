@@ -107,6 +107,7 @@ test-suite blog-api-test
   other-modules:
       Constructors
       Controllers.PostControllerSpec
+      Mocks.CommentStore
       Mocks.PostStore
       Mocks.StorageMock
       Paths_blog_api
