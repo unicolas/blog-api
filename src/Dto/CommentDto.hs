@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Dto.CommentDto (CommentDto(..), fromEntity, toComment) where
+module Dto.CommentDto (CommentDto(..), fromEntity) where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
@@ -39,16 +39,3 @@ fromEntity (Entity (Id cid) comment) = fromComment comment
         , authorId = aid
         , ..
         }
-
-toComment :: CommentDto -> Comment
-toComment
-  CommentDto
-    { postId = pid
-    , authorId = aid
-    , ..
-    }
-  = Comment
-    { postId = Id pid
-    , userId = Id aid
-    , ..
-    }

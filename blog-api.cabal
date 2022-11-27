@@ -34,6 +34,7 @@ library
       Controllers.Types.Error
       DatabaseContext
       Dto.CommentDto
+      Dto.NewCommentDto
       Dto.NewPostDto
       Dto.PostDto
       Models.Comment

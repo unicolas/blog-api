@@ -9,6 +9,8 @@ import Controllers.Types.Error (Error(..))
 import qualified Data.Aeson as Aeson
 import Dto.CommentDto (CommentDto)
 import qualified Dto.CommentDto as CommentDto
+import Dto.NewCommentDto (NewCommentDto)
+import qualified Dto.NewCommentDto as NewCommentDto
 import Models.Comment (Comment)
 import Models.Post (Post)
 import Models.Types.Id (Id)
@@ -63,12 +65,12 @@ getComment commentId = do
 
 -- POST /comments
 type CreateComment = Base
-  :> ReqBody '[JSON] CommentDto
+  :> ReqBody '[JSON] NewCommentDto
   :> Http.Post '[JSON] (Id Comment)
 
-createComment :: (MonadThrow m, CommentStore m) => CommentDto -> m (Id Comment)
+createComment :: (MonadThrow m, CommentStore m) => NewCommentDto -> m (Id Comment)
 createComment comment = do
-  maybeId <- CommentStore.save (CommentDto.toComment comment)
+  maybeId <- CommentStore.save (NewCommentDto.toComment comment)
   case maybeId of
     Just commentId -> pure commentId
     Nothing -> throwM err500
