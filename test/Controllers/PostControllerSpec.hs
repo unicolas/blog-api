@@ -86,7 +86,9 @@ spec = do
       runMock (length <$> getPosts Nothing) givenPosts `shouldReturn` 2
 
     it "Finds all posts by author" $ do
-      runMock (length <$> getPosts (Just sndUser)) givenPosts `shouldReturn` 1
+      authoredPosts <- runMock (getPosts (Just sndUser)) givenPosts
+      length authoredPosts `shouldBe` 1
+      authoredPosts `shouldSatisfy` all ((== sndUser) . Id . PostDto.authorId)
 
     context "When finding by id" $ do
       it "Throws error if not found" $ do
