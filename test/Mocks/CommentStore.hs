@@ -35,4 +35,6 @@ instance CommentStore StorageMock where
   delete _ = undefined
 
   findByPost :: Id Post -> StorageMock [Entity Comment]
-  findByPost _ = undefined
+  findByPost idPost = gets (filter forPost . Map.elems . StorageMock.comments)
+    where
+      forPost (Entity _ comment) = idPost == postId comment

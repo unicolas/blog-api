@@ -2,7 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Controllers.CommentController (Routes, handlers) where
+module Controllers.CommentController
+  ( Routes
+  , handlers
+  , getComments
+  , getComment
+  , createComment
+  ) where
 
 import Control.Monad.Catch (MonadThrow(throwM))
 import Controllers.Types.Error (Error(..))

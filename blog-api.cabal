@@ -107,6 +107,7 @@ test-suite blog-api-test
   main-is: Spec.hs
   other-modules:
       Constructors
+      Controllers.CommentControllerSpec
       Controllers.PostControllerSpec
       Mocks.CommentStore
       Mocks.PostStore
