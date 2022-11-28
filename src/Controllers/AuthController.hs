@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Controllers.AuthController (Login, login) where
+module Controllers.AuthController (Login, login, checkCreds, LoginRequest(..)) where
 
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow(throwM))
