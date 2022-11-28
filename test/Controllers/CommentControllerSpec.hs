@@ -69,7 +69,7 @@ spec = do
           { NewCommentDto.title = "Title"
           , NewCommentDto.content = "Content"
           , NewCommentDto.postId = fstId & \(Id uuid) -> uuid
-          , NewCommentDto.authorId = makeUuid "3034bb25-e47b-41ff-902c-5ab6aae7e6a6"
+          , NewCommentDto.authorId = makeUuid "b73894f9-39e0-427a-abb4-48ff7322d3ab"
           , NewCommentDto.createdAt = makeUtc "2022-09-12 00:00"
           , NewCommentDto.updatedAt = makeUtc "2022-09-12 00:00"
           }
@@ -87,8 +87,8 @@ spec = do
 
   describe "Given a blog with comments" $ do
     let
-      fstCommentId = makeId "3034bb25-e47b-41ff-902c-5ab6aae7e6a6"
-      commentUser = makeId "0a6c8791-ab24-4b87-8289-411582c3bab7"
+      fstCommentId = makeId "127c2982-355b-4e06-9313-b63db0d1aa49"
+      commentUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
       fstComment = Comment
         { Comment.title = "Comment 1"
         , Comment.content = "Comment content 1"
@@ -97,7 +97,7 @@ spec = do
         , Comment.createdAt = makeUtc "2022-09-12 00:00"
         , Comment.updatedAt = makeUtc "2022-09-12 00:00"
         }
-      sndCommentId = makeId "c22d7bbb-e6d5-45bc-88d6-8a75db4b56a3"
+      sndCommentId = makeId "e1da0ad5-d7fb-4c80-bb53-999d6e7c6147"
       sndComment = Comment
         { Comment.title = "Comment 2"
         , Comment.content = "Comment content 2"
