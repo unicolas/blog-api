@@ -32,7 +32,9 @@ instance CommentStore StorageMock where
     pure $ Just commentId
 
   delete :: Id Comment -> StorageMock ()
-  delete _ = undefined
+  delete commentId = do
+    comments <- gets (Map.delete commentId . StorageMock.comments)
+    modify (\s -> s {StorageMock.comments = comments})
 
   findByPost :: Id Post -> StorageMock [Entity Comment]
   findByPost idPost = gets (filter forPost . Map.elems . StorageMock.comments)

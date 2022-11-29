@@ -8,11 +8,14 @@ module Controllers.CommentController
   , getComments
   , getComment
   , createComment
+  , deleteComment
   ) where
 
+import Control.Monad (unless)
 import Control.Monad.Catch (MonadThrow(throwM))
 import Controllers.Types.Error (Error(..))
 import qualified Data.Aeson as Aeson
+import Data.Maybe (isJust)
 import Dto.CommentDto (CommentDto)
 import qualified Dto.CommentDto as CommentDto
 import Dto.NewCommentDto (NewCommentDto)
@@ -20,7 +23,7 @@ import qualified Dto.NewCommentDto as NewCommentDto
 import Models.Comment (Comment)
 import Models.Post (Post)
 import Models.Types.Id (Id)
-import qualified Servant as Http (Get, Post)
+import qualified Servant as Http (Delete, Get, NoContent(..), Post)
 import Servant
   ( Capture
   , JSON
@@ -36,10 +39,10 @@ import Servant.API (QueryParam)
 import qualified Stores.CommentStore as CommentStore
 import Stores.CommentStore (CommentStore)
 
-type Routes = GetComments :<|> GetComment :<|> CreateComment
+type Routes = GetComments :<|> GetComment :<|> CreateComment :<|> DeleteComment
 
 handlers :: (MonadThrow m, CommentStore m) => ServerT Routes m
-handlers = getComments :<|> getComment :<|> createComment
+handlers = getComments :<|> getComment :<|> createComment :<|> deleteComment
 
 type Base = "comments"
 
@@ -83,3 +86,18 @@ createComment comment = do
       { errBody = Aeson.encode $ Error "Failed to create comment."
       , errHeaders = [("Content-Type", "application/json")]
       }
+
+-- DELETE /comments/:postId
+type DeleteComment = Base
+  :> Capture "commentId" (Id Comment)
+  :> Http.Delete '[JSON] Http.NoContent
+
+deleteComment :: (MonadThrow m, CommentStore m) => Id Comment -> m Http.NoContent
+deleteComment commentId = do
+  exists <- isJust <$> CommentStore.find commentId
+  unless exists $ throwM err404
+    { errBody = Aeson.encode $ Error "Could not find post with such ID."
+    , errHeaders = [("Content-Type", "application/json")]
+    }
+  CommentStore.delete commentId
+  pure Http.NoContent

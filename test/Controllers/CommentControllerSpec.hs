@@ -3,7 +3,8 @@
 module Controllers.CommentControllerSpec (spec) where
 
 import Constructors (makeId, makeUtc, makeUuid)
-import Controllers.CommentController (createComment, getComment, getComments)
+import Controllers.CommentController
+  (createComment, deleteComment, getComment, getComments)
 import Data.Function ((&))
 import qualified Data.Map.Strict as Map
 import Data.UUID (nil)
@@ -126,3 +127,11 @@ spec = do
     context "When finding by id" $ do
       it "Throws error if not found" $ do
         runMock (getComment (Id nil)) givenComments `shouldThrow` anyException
+
+    context "When deleting a comment" $ do
+      it "Does not find the comment" $ do
+        let deleteThenGet idComment = deleteComment idComment *> getComment idComment
+        runMock (deleteThenGet fstCommentId) givenComments `shouldThrow` anyException
+
+      it "Throws error if not found" $ do
+        runMock (deleteComment (Id nil)) givenComments `shouldThrow` anyException
