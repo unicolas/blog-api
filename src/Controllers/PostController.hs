@@ -13,8 +13,7 @@ module Controllers.PostController
 
 import Control.Monad (unless)
 import Control.Monad.Catch (MonadThrow(throwM))
-import Controllers.Types.Error (Error(..))
-import qualified Data.Aeson as Aeson
+import qualified Controllers.Types.Error as Error
 import Data.Maybe (isJust)
 import Dto.NewPostDto (NewPostDto)
 import qualified Dto.NewPostDto as NewPostDto
@@ -25,17 +24,7 @@ import Models.Types.Id (Id)
 import Models.User (User)
 import qualified Servant as Http (Delete, Get, NoContent(..), Post)
 import Servant
-  ( Capture
-  , JSON
-  , QueryParam
-  , ReqBody
-  , ServerError(..)
-  , ServerT
-  , err404
-  , err500
-  , type (:<|>)(..)
-  , type (:>)
-  )
+  (Capture, JSON, QueryParam, ReqBody, ServerT, type (:<|>)(..), type (:>))
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
 
@@ -67,10 +56,7 @@ getPost postId = do
   let maybeDto = PostDto.fromEntity <$> maybePost
   case maybeDto of
     Just dto -> pure dto
-    Nothing -> throwM err404
-      { errBody = Aeson.encode $ Error "Could not find post with such ID."
-      , errHeaders = [("Content-Type", "application/json")]
-      }
+    Nothing -> throwM (Error.notFound "Could not find post with such ID.")
 
 -- POST /posts
 type CreatePost = Base
@@ -82,10 +68,7 @@ createPost post = do
   maybeId <- PostStore.save $ NewPostDto.toPost post
   case maybeId of
     Just postId -> pure postId
-    Nothing -> throwM err500
-      { errBody = Aeson.encode $ Error "Failed to create post."
-      , errHeaders = [("Content-Type", "application/json")]
-      }
+    Nothing -> throwM (Error.serverError "Failed to create post.")
 
 -- DELETE /posts/:postId
 type DeletePost = Base
@@ -95,9 +78,6 @@ type DeletePost = Base
 deletePost :: (MonadThrow m, PostStore m) => Id Post -> m Http.NoContent
 deletePost postId = do
   exists <- isJust <$> PostStore.find postId
-  unless exists $ throwM err404
-    { errBody = Aeson.encode $ Error "Could not find post with such ID."
-    , errHeaders = [("Content-Type", "application/json")]
-    }
+  unless exists $ throwM (Error.notFound "Could not find post with such ID.")
   PostStore.delete postId
   pure Http.NoContent
