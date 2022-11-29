@@ -30,9 +30,6 @@ instance UserStore StorageMock where
     modify (\s -> s {StorageMock.users = users})
     pure $ Just idUser
 
-  delete :: Id User -> StorageMock ()
-  delete _ = undefined
-
   findWithCredentials :: Text -> StorageMock (Maybe (Aggregate User Credentials))
   findWithCredentials aUsername = do
     maybeUser <- gets (List.find withUsername . Map.elems . StorageMock.users)

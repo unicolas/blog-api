@@ -4,7 +4,6 @@
 
 module Mocks.PostStore (PostStore(..)) where
 
-import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets, modify)
 import qualified Data.Map.Strict as Map

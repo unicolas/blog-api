@@ -6,13 +6,12 @@ module Stores.UserStore (UserStore(..)) where
 
 import App (App)
 import AppContext (AppContext(..))
-import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader.Class (asks)
 import Data.Maybe (listToMaybe)
 import Data.Pool (withResource)
 import Data.Text (Text)
-import Database.PostgreSQL.Simple (execute, fromOnly, query)
+import Database.PostgreSQL.Simple (fromOnly, query)
 import DatabaseContext (DatabaseContext(..))
 import Models.Credentials (Credentials)
 import Models.Types.Aggregate (Aggregate)
@@ -23,7 +22,6 @@ import Models.User (User(..))
 class Monad m => UserStore m where
   find :: Id User -> m (Maybe (Entity User))
   save :: User -> m (Maybe (Id User))
-  delete :: Id User -> m ()
   findWithCredentials :: Text -> m (Maybe (Aggregate User Credentials))
 
 instance UserStore App where
@@ -43,12 +41,6 @@ instance UserStore App where
     ids <- liftIO $ withResource pool
       $ \conn -> query conn sql (username user, email user)
     pure $ fromOnly <$> listToMaybe ids
-
-  delete :: Id User -> App ()
-  delete idUser = do
-    let sql = "DELETE FROM users WHERE id = ?"
-    pool <- asks $ connectionPool . databaseContext
-    void $ liftIO $ withResource pool $ \conn -> execute conn sql [idUser]
 
   findWithCredentials :: Text -> App (Maybe (Aggregate User Credentials))
   findWithCredentials aUsername = do
