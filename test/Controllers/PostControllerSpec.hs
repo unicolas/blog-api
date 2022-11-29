@@ -98,3 +98,6 @@ spec = do
       it "Does not find the post" $ do
         let deleteThenGet idPost = deletePost idPost *> getPost idPost
         runMock (deleteThenGet fstId) givenPosts `shouldThrow` anyException
+
+      it "Throws error if not found" $ do
+        runMock (deletePost (Id nil)) givenPosts `shouldThrow` anyException
