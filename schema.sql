@@ -5,7 +5,7 @@
 -- Dumped from database version 14.5 (Debian 14.5-2.pgdg110+2)
 -- Dumped by pg_dump version 14.4
 
--- Started on 2022-11-09 22:24:35
+-- Started on 2022-11-28 20:55:58
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -153,16 +153,16 @@ ALTER TABLE ONLY public.user_credentials
 
 
 --
--- TOC entry 3193 (class 2606 OID 24584)
+-- TOC entry 3194 (class 2606 OID 24637)
 -- Name: comments post_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.comments
-    ADD CONSTRAINT post_id_fk FOREIGN KEY (post_id) REFERENCES public.posts(id) NOT VALID;
+    ADD CONSTRAINT post_id_fk FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE;
 
 
 --
--- TOC entry 3194 (class 2606 OID 24611)
+-- TOC entry 3193 (class 2606 OID 24611)
 -- Name: comments user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -179,7 +179,7 @@ ALTER TABLE ONLY public.posts
     ADD CONSTRAINT user_id_fk FOREIGN KEY (user_id) REFERENCES public.users(id) NOT VALID;
 
 
--- Completed on 2022-11-09 22:24:35
+-- Completed on 2022-11-28 20:55:58
 
 --
 -- PostgreSQL database dump complete

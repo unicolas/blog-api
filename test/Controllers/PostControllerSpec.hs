@@ -3,7 +3,7 @@
 module Controllers.PostControllerSpec (spec) where
 
 import Constructors (makeId, makeUtc, makeUuid)
-import Controllers.PostController (createPost, getPost, getPosts)
+import Controllers.PostController (createPost, deletePost, getPost, getPosts)
 import qualified Data.Map.Strict as Map
 import Data.UUID (nil)
 import Dto.NewPostDto (NewPostDto(NewPostDto))
@@ -93,3 +93,8 @@ spec = do
     context "When finding by id" $ do
       it "Throws error if not found" $ do
         runMock (getPost (Id nil)) givenPosts `shouldThrow` anyException
+
+    context "When deleting a post" $ do
+      it "Does not find the post" $ do
+        let deleteThenGet idPost = deletePost idPost *> getPost idPost
+        runMock (deleteThenGet fstId) givenPosts `shouldThrow` anyException

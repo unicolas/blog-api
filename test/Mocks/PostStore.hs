@@ -4,6 +4,7 @@
 
 module Mocks.PostStore (PostStore(..)) where
 
+import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets, modify)
 import qualified Data.Map.Strict as Map
@@ -31,7 +32,9 @@ instance PostStore StorageMock where
     pure $ Just postId
 
   delete :: Id Post -> StorageMock ()
-  delete _ = undefined
+  delete postId = do
+    posts <- gets (Map.delete postId . StorageMock.posts)
+    modify (\s -> s {StorageMock.posts = posts})
 
   findByAuthor :: Id User -> StorageMock [Entity Post]
   findByAuthor author = gets (filter authored . Map.elems . StorageMock.posts)

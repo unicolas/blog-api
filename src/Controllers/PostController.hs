@@ -8,11 +8,14 @@ module Controllers.PostController
   , getPosts
   , getPost
   , createPost
+  , deletePost
   ) where
 
+import Control.Monad (unless)
 import Control.Monad.Catch (MonadThrow(throwM))
 import Controllers.Types.Error (Error(..))
 import qualified Data.Aeson as Aeson
+import Data.Maybe (isJust)
 import Dto.NewPostDto (NewPostDto)
 import qualified Dto.NewPostDto as NewPostDto
 import Dto.PostDto (PostDto)
@@ -20,7 +23,7 @@ import qualified Dto.PostDto as PostDto
 import Models.Post (Post)
 import Models.Types.Id (Id)
 import Models.User (User)
-import qualified Servant as Http (Get, Post)
+import qualified Servant as Http (Delete, Get, NoContent(..), Post)
 import Servant
   ( Capture
   , JSON
@@ -36,10 +39,10 @@ import Servant
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
 
-type Routes = GetPosts :<|> GetPost :<|> CreatePost
+type Routes = GetPosts :<|> GetPost :<|> CreatePost :<|> DeletePost
 
 handlers :: (MonadThrow m, PostStore m) => ServerT Routes m
-handlers = getPosts :<|> getPost :<|> createPost
+handlers = getPosts :<|> getPost :<|> createPost :<|> deletePost
 
 type Base = "posts"
 
@@ -83,3 +86,18 @@ createPost post = do
       { errBody = Aeson.encode $ Error "Failed to create post."
       , errHeaders = [("Content-Type", "application/json")]
       }
+
+-- DELETE /posts/:postId
+type DeletePost = Base
+  :> Capture "postId" (Id Post)
+  :> Http.Delete '[JSON] Http.NoContent
+
+deletePost :: (MonadThrow m, PostStore m) => Id Post -> m Http.NoContent
+deletePost postId = do
+  exists <- isJust <$> PostStore.find postId
+  unless exists $ throwM err404
+    { errBody = Aeson.encode $ Error "Could not find post with such ID."
+    , errHeaders = [("Content-Type", "application/json")]
+    }
+  PostStore.delete postId
+  pure Http.NoContent
