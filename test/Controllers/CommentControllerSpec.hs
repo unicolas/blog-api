@@ -1,8 +1,9 @@
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Controllers.CommentControllerSpec (spec) where
 
-import Constructors (makeId, makeUtc, makeUuid)
+import Constructors (makeId, makeUser, makeUtc)
 import Controllers.CommentController
   (createComment, deleteComment, getComment, getComments)
 import Data.Function ((&))
@@ -20,6 +21,7 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
+import RequestContext (makeRequestContext)
 import Test.Hspec
   ( Spec
   , anyException
@@ -59,7 +61,11 @@ spec = do
       ]
 
   describe "Given a blog with no comments" $ do
-    let noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
+    let
+      noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
+      user = makeUser "usr" "usr@mail.com" "b73894f9-39e0-427a-abb4-48ff7322d3ab"
+      userUuid = user & \(Entity (Id uuid) _) -> uuid
+    let ?requestCtx = makeRequestContext user
 
     it "Does not find a single comment" $ do
       runMock (getComments Nothing) noComments `shouldReturn` []
@@ -70,7 +76,6 @@ spec = do
           { NewCommentDto.title = "Title"
           , NewCommentDto.content = "Content"
           , NewCommentDto.postId = fstId & \(Id uuid) -> uuid
-          , NewCommentDto.authorId = makeUuid "b73894f9-39e0-427a-abb4-48ff7322d3ab"
           , NewCommentDto.createdAt = makeUtc "2022-09-12 00:00"
           , NewCommentDto.updatedAt = makeUtc "2022-09-12 00:00"
           }
@@ -84,7 +89,7 @@ spec = do
         comment <- runMock (createComment newComment >>= getComment) noComments
         CommentDto.title comment `shouldBe` NewCommentDto.title newComment
         CommentDto.content comment `shouldBe` NewCommentDto.content newComment
-        CommentDto.authorId comment `shouldBe` NewCommentDto.authorId newComment
+        CommentDto.authorId comment `shouldBe` userUuid
 
   describe "Given a blog with comments" $ do
     let

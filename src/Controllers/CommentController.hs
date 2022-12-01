@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ImplicitParams #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -22,6 +24,8 @@ import qualified Dto.NewCommentDto as NewCommentDto
 import Models.Comment (Comment)
 import Models.Post (Post)
 import Models.Types.Id (Id)
+import qualified RequestContext
+import RequestContext (RequestContext)
 import qualified Servant as Http (Delete, Get, NoContent(..), Post)
 import Servant (Capture, JSON, ReqBody, ServerT, type (:<|>)(..), type (:>))
 import Servant.API (QueryParam)
@@ -30,7 +34,8 @@ import Stores.CommentStore (CommentStore)
 
 type Routes = GetComments :<|> GetComment :<|> CreateComment :<|> DeleteComment
 
-handlers :: (MonadThrow m, CommentStore m) => ServerT Routes m
+handlers :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)
+  => ServerT Routes m
 handlers = getComments :<|> getComment :<|> createComment :<|> deleteComment
 
 type Base = "comments"
@@ -63,10 +68,11 @@ type CreateComment = Base
   :> ReqBody '[JSON] NewCommentDto
   :> Http.Post '[JSON] (Id Comment)
 
-createComment :: (MonadThrow m, CommentStore m) => NewCommentDto -> m (Id Comment)
-createComment comment = do
-  maybeId <- CommentStore.save (NewCommentDto.toComment comment)
-  case maybeId of
+createComment :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)
+  => NewCommentDto -> m (Id Comment)
+createComment dto = do
+  let comment = NewCommentDto.toComment dto (RequestContext.userId ?requestCtx)
+  CommentStore.save comment >>= \case
     Just commentId -> pure commentId
     Nothing -> throwM (Error.serverError "Failed to create comment.")
 

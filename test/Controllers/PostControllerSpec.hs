@@ -1,9 +1,11 @@
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Controllers.PostControllerSpec (spec) where
 
-import Constructors (makeId, makeUtc, makeUuid)
+import Constructors (makeId, makeUser, makeUtc)
 import Controllers.PostController (createPost, deletePost, getPost, getPosts)
+import Data.Function ((&))
 import qualified Data.Map.Strict as Map
 import Data.UUID (nil)
 import Dto.NewPostDto (NewPostDto(NewPostDto))
@@ -16,6 +18,7 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
+import RequestContext (makeRequestContext)
 import Test.Hspec
   ( Spec
   , anyException
@@ -31,7 +34,11 @@ import Test.Hspec
 spec :: Spec
 spec = do
   describe "Given a blog with no posts" $ do
-    let noPosts = StorageMock.emptyStorage
+    let
+      noPosts = StorageMock.emptyStorage
+      user = makeUser "usr" "usr@mail.com" "cb97ab07-8785-4f03-9ead-a2178c680ec2"
+      userUuid = user & \(Entity (Id uuid) _) -> uuid
+    let ?requestCtx = makeRequestContext user
 
     it "Does not find a single post" $ do
       runMock (getPosts Nothing) noPosts `shouldReturn` []
@@ -41,7 +48,6 @@ spec = do
         newPost = NewPostDto
           { NewPostDto.title = "Title"
           , NewPostDto.content = "Content"
-          , NewPostDto.authorId = makeUuid "3034bb25-e47b-41ff-902c-5ab6aae7e6a6"
           , NewPostDto.createdAt = makeUtc "2022-09-12 00:00"
           , NewPostDto.updatedAt = makeUtc "2022-09-12 00:00"
           }
@@ -54,7 +60,7 @@ spec = do
         post <- runMock (createPost newPost >>= getPost) noPosts
         PostDto.title post `shouldBe` NewPostDto.title newPost
         PostDto.content post `shouldBe` NewPostDto.content newPost
-        PostDto.authorId post `shouldBe` NewPostDto.authorId newPost
+        PostDto.authorId post `shouldBe` userUuid
 
   describe "Given a blog with posts" $ do
     let

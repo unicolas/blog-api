@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ImplicitParams #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Controllers.Api (api, server) where
@@ -19,7 +20,7 @@ import qualified Servant.Auth.Server as Sas
 type SecuredRoutes = PostController.Routes :<|> CommentController.Routes
 
 securedHandlers :: Sas.AuthResult (Entity User) -> ServerT SecuredRoutes App
-securedHandlers authResult = case authResult of
+securedHandlers = \case
   Sas.Authenticated user ->
     let ?requestCtx = makeRequestContext user
     in PostController.handlers :<|> CommentController.handlers

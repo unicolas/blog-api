@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ImplicitParams #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -22,6 +24,8 @@ import qualified Dto.PostDto as PostDto
 import Models.Post (Post)
 import Models.Types.Id (Id)
 import Models.User (User)
+import qualified RequestContext
+import RequestContext (RequestContext)
 import qualified Servant as Http (Delete, Get, NoContent(..), Post)
 import Servant
   (Capture, JSON, QueryParam, ReqBody, ServerT, type (:<|>)(..), type (:>))
@@ -30,7 +34,8 @@ import Stores.PostStore (PostStore)
 
 type Routes = GetPosts :<|> GetPost :<|> CreatePost :<|> DeletePost
 
-handlers :: (MonadThrow m, PostStore m) => ServerT Routes m
+handlers :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)
+  => ServerT Routes m
 handlers = getPosts :<|> getPost :<|> createPost :<|> deletePost
 
 type Base = "posts"
@@ -63,10 +68,11 @@ type CreatePost = Base
   :> ReqBody '[JSON] NewPostDto
   :> Http.Post '[JSON] (Id Post)
 
-createPost :: (MonadThrow m, PostStore m) => NewPostDto -> m (Id Post)
-createPost post = do
-  maybeId <- PostStore.save $ NewPostDto.toPost post
-  case maybeId of
+createPost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)
+  => NewPostDto -> m (Id Post)
+createPost dto = do
+  let post = NewPostDto.toPost dto (RequestContext.userId ?requestCtx)
+  PostStore.save post >>= \case
     Just postId -> pure postId
     Nothing -> throwM (Error.serverError "Failed to create post.")
 
