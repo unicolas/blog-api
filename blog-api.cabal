@@ -44,6 +44,7 @@ library
       Models.Types.Entity
       Models.Types.Id
       Models.User
+      RequestContext
       Stores.CommentStore
       Stores.PostStore
       Stores.UserStore

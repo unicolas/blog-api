@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Controllers.Api (api, server) where
@@ -9,18 +10,22 @@ import qualified Controllers.CommentController as CommentController
 import qualified Controllers.PostController as PostController
 import qualified Controllers.Types.Error as Error
 import Data.Data (Proxy(Proxy))
+import Models.Types.Entity (Entity)
 import Models.User (User(..))
+import RequestContext (makeRequestContext)
 import Servant (ServerT, type (:<|>)(..), type (:>))
 import qualified Servant.Auth.Server as Sas
 
 type SecuredRoutes = PostController.Routes :<|> CommentController.Routes
 
-securedHandlers :: Sas.AuthResult User -> ServerT SecuredRoutes App
-securedHandlers (Sas.Authenticated _)
-  = PostController.handlers :<|> CommentController.handlers
-securedHandlers _ = Sas.throwAll Error.unauthorized
+securedHandlers :: Sas.AuthResult (Entity User) -> ServerT SecuredRoutes App
+securedHandlers authResult = case authResult of
+  Sas.Authenticated user ->
+    let ?requestCtx = makeRequestContext user
+    in PostController.handlers :<|> CommentController.handlers
+  _ -> Sas.throwAll Error.unauthorized
 
-type Api auths = Sas.Auth auths User :> SecuredRoutes :<|> AuthController.Login
+type Api auths = Sas.Auth auths (Entity User) :> SecuredRoutes :<|> AuthController.Login
 
 server :: Sas.CookieSettings -> Sas.JWTSettings -> ServerT (Api auths) App
 server cs jwts = securedHandlers :<|> AuthController.login cs jwts

@@ -1,6 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
 
-module Models.Types.Aggregate (Aggregate(..), deconstruct) where
+module Models.Types.Aggregate (Aggregate(..)) where
 
 import qualified Database.PostgreSQL.Simple.FromRow as Postgres
 import Models.Types.Entity (Entity(..))
@@ -14,6 +14,3 @@ instance
   ) => Postgres.FromRow (Aggregate a b) where
   fromRow :: Postgres.RowParser (Aggregate a b)
   fromRow = Aggregate <$> Postgres.fromRow <*> Postgres.fromRow
-
-deconstruct :: Aggregate a b -> (a, b)
-deconstruct (Aggregate (Entity _ model) relation) = (model, relation)

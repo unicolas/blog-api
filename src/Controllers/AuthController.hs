@@ -15,7 +15,7 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Models.Credentials (Credentials)
 import qualified Models.Credentials as Credentials
-import Models.Types.Aggregate (deconstruct)
+import Models.Types.Aggregate (Aggregate(Aggregate))
 import qualified Servant as Http (Header, Headers, NoContent(..), Post)
 import Servant (JSON, ReqBody, ServerT, type (:>))
 import qualified Servant.Auth.Server as Sas
@@ -48,13 +48,13 @@ checkCreds cookieSettings jwtSettings (LoginRequest reqUser reqPassword) = do
   maybeAggr <- UserStore.findWithCredentials reqUser
   (user, creds) <- case maybeAggr of
     Nothing -> throwM Error.unauthorized
-    Just aggregate -> pure $ deconstruct aggregate
+    Just (Aggregate u c) -> pure (u, c)
   when (Bcrypt.PasswordCheckFail == checkPassword reqPassword creds)
     $ throwM Error.unauthorized
-  maybeCookies <- liftIO $ Sas.acceptLogin cookieSettings jwtSettings user
+  maybeCookies <- liftIO (Sas.acceptLogin cookieSettings jwtSettings user)
   case maybeCookies of
     Nothing -> throwM Error.unauthorized
-    Just cookies -> pure $ cookies Http.NoContent
+    Just cookies -> pure (cookies Http.NoContent)
 
 checkPassword :: Text -> Credentials -> Bcrypt.PasswordCheck
 checkPassword plain creds = Bcrypt.checkPassword
