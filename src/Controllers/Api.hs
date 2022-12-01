@@ -7,9 +7,10 @@ import App (App)
 import qualified Controllers.AuthController as AuthController
 import qualified Controllers.CommentController as CommentController
 import qualified Controllers.PostController as PostController
+import qualified Controllers.Types.Error as Error
 import Data.Data (Proxy(Proxy))
 import Models.User (User(..))
-import Servant (ServerT, err401, type (:<|>)(..), type (:>))
+import Servant (ServerT, type (:<|>)(..), type (:>))
 import qualified Servant.Auth.Server as Sas
 
 type SecuredRoutes = PostController.Routes :<|> CommentController.Routes
@@ -17,7 +18,7 @@ type SecuredRoutes = PostController.Routes :<|> CommentController.Routes
 securedHandlers :: Sas.AuthResult User -> ServerT SecuredRoutes App
 securedHandlers (Sas.Authenticated _)
   = PostController.handlers :<|> CommentController.handlers
-securedHandlers _ = Sas.throwAll err401
+securedHandlers _ = Sas.throwAll Error.unauthorized
 
 type Api auths = Sas.Auth auths User :> SecuredRoutes :<|> AuthController.Login
 

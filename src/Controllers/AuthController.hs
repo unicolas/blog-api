@@ -8,6 +8,7 @@ module Controllers.AuthController (Login, login, checkCreds, LoginRequest(..)) w
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow(throwM))
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Controllers.Types.Error as Error
 import Data.Aeson (FromJSON)
 import qualified Data.Password.Bcrypt as Bcrypt
 import Data.Text (Text)
@@ -16,7 +17,7 @@ import Models.Credentials (Credentials)
 import qualified Models.Credentials as Credentials
 import Models.Types.Aggregate (deconstruct)
 import qualified Servant as Http (Header, Headers, NoContent(..), Post)
-import Servant (JSON, ReqBody, ServerT, err401, type (:>))
+import Servant (JSON, ReqBody, ServerT, type (:>))
 import qualified Servant.Auth.Server as Sas
 import qualified Stores.UserStore as UserStore
 import Stores.UserStore (UserStore)
@@ -46,13 +47,13 @@ checkCreds :: (MonadThrow m, UserStore m, MonadIO m)
 checkCreds cookieSettings jwtSettings (LoginRequest reqUser reqPassword) = do
   maybeAggr <- UserStore.findWithCredentials reqUser
   (user, creds) <- case maybeAggr of
-    Nothing -> throwM err401
+    Nothing -> throwM Error.unauthorized
     Just aggregate -> pure $ deconstruct aggregate
   when (Bcrypt.PasswordCheckFail == checkPassword reqPassword creds)
-    $ throwM err401
+    $ throwM Error.unauthorized
   maybeCookies <- liftIO $ Sas.acceptLogin cookieSettings jwtSettings user
   case maybeCookies of
-    Nothing -> throwM err401
+    Nothing -> throwM Error.unauthorized
     Just cookies -> pure $ cookies Http.NoContent
 
 checkPassword :: Text -> Credentials -> Bcrypt.PasswordCheck
