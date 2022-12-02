@@ -3,7 +3,7 @@
 
 module Controllers.CommentControllerSpec (spec) where
 
-import Constructors (makeId, makeUser, makeUtc)
+import Constructors (makeId, makeUtc)
 import Controllers.CommentController
   (createComment, deleteComment, getComment, getComments)
 import Data.Function ((&))
@@ -21,7 +21,7 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
-import RequestContext (makeRequestContext)
+import RequestContext (RequestContext(..))
 import Test.Hspec
   ( Spec
   , anyException
@@ -63,9 +63,8 @@ spec = do
   describe "Given a blog with no comments" $ do
     let
       noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
-      user = makeUser "usr" "usr@mail.com" "b73894f9-39e0-427a-abb4-48ff7322d3ab"
-      userUuid = user & \(Entity (Id uuid) _) -> uuid
-    let ?requestCtx = makeRequestContext user
+      idUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
+    let ?requestCtx = RequestContext {RequestContext.userId = idUser}
 
     it "Does not find a single comment" $ do
       runMock (getComments Nothing) noComments `shouldReturn` []
@@ -89,7 +88,7 @@ spec = do
         comment <- runMock (createComment newComment >>= getComment) noComments
         CommentDto.title comment `shouldBe` NewCommentDto.title newComment
         CommentDto.content comment `shouldBe` NewCommentDto.content newComment
-        CommentDto.authorId comment `shouldBe` userUuid
+        CommentDto.authorId comment `shouldBe` (idUser & \(Id uuid) -> uuid)
 
   describe "Given a blog with comments" $ do
     let

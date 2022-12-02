@@ -3,7 +3,7 @@
 
 module Controllers.PostControllerSpec (spec) where
 
-import Constructors (makeId, makeUser, makeUtc)
+import Constructors (makeId, makeUtc)
 import Controllers.PostController (createPost, deletePost, getPost, getPosts)
 import Data.Function ((&))
 import qualified Data.Map.Strict as Map
@@ -18,7 +18,7 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
-import RequestContext (makeRequestContext)
+import RequestContext (RequestContext(..))
 import Test.Hspec
   ( Spec
   , anyException
@@ -36,9 +36,8 @@ spec = do
   describe "Given a blog with no posts" $ do
     let
       noPosts = StorageMock.emptyStorage
-      user = makeUser "usr" "usr@mail.com" "cb97ab07-8785-4f03-9ead-a2178c680ec2"
-      userUuid = user & \(Entity (Id uuid) _) -> uuid
-    let ?requestCtx = makeRequestContext user
+      idUser = makeId "cb97ab07-8785-4f03-9ead-a2178c680ec2"
+    let ?requestCtx = RequestContext {RequestContext.userId = idUser}
 
     it "Does not find a single post" $ do
       runMock (getPosts Nothing) noPosts `shouldReturn` []
@@ -60,7 +59,7 @@ spec = do
         post <- runMock (createPost newPost >>= getPost) noPosts
         PostDto.title post `shouldBe` NewPostDto.title newPost
         PostDto.content post `shouldBe` NewPostDto.content newPost
-        PostDto.authorId post `shouldBe` userUuid
+        PostDto.authorId post `shouldBe` (idUser & \(Id uuid) -> uuid)
 
   describe "Given a blog with posts" $ do
     let

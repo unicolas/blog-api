@@ -11,7 +11,7 @@ import Controllers.Api (api, server)
 import Data.ByteString.UTF8 (fromString)
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy(..))
-import DatabaseContext (makeDatabaseContext)
+import qualified DatabaseContext
 import Network.Wai.Handler.Warp (run)
 import Servant (Context(..), hoistServerWithContext, serveWithContext)
 import qualified Servant.Auth.Server as Sas
@@ -21,7 +21,7 @@ import Text.Read (readMaybe)
 main :: IO ()
 main = loadEnv *> do
   conn <- Environment.getEnv "DATABASE_URL"
-  dbCtx <- makeDatabaseContext (fromString conn)
+  dbCtx <- DatabaseContext.make (fromString conn)
   let ?appCtx = AppContext dbCtx
   secret <- Environment.lookupEnv "JWT_SECRET"
   key <- maybe Sas.generateKey (pure . Sas.fromSecret . fromString) secret

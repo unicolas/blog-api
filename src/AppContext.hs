@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module AppContext (AppContext(..), makeAppContext) where
+module AppContext (AppContext(..), make) where
 
 import DatabaseContext (DatabaseContext)
 
@@ -8,5 +8,5 @@ newtype AppContext = AppContext
   { databaseContext :: DatabaseContext
   }
 
-makeAppContext :: DatabaseContext -> AppContext
-makeAppContext databaseContext = AppContext {..}
+make :: DatabaseContext -> AppContext
+make databaseContext = AppContext {..}

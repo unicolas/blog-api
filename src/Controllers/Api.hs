@@ -13,7 +13,7 @@ import qualified Controllers.Types.Error as Error
 import Data.Data (Proxy(Proxy))
 import Models.Types.Entity (Entity)
 import Models.User (User(..))
-import RequestContext (makeRequestContext)
+import qualified RequestContext
 import Servant (ServerT, type (:<|>)(..), type (:>))
 import qualified Servant.Auth.Server as Sas
 
@@ -22,7 +22,7 @@ type SecuredRoutes = PostController.Routes :<|> CommentController.Routes
 securedHandlers :: Sas.AuthResult (Entity User) -> ServerT SecuredRoutes App
 securedHandlers = \case
   Sas.Authenticated user ->
-    let ?requestCtx = makeRequestContext user
+    let ?requestCtx = RequestContext.make user
     in PostController.handlers :<|> CommentController.handlers
   _ -> Sas.throwAll Error.unauthorized
 

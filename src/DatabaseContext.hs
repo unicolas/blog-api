@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module DatabaseContext (DatabaseContext(..), makeDatabaseContext) where
+module DatabaseContext (DatabaseContext(..), make) where
 
 import Data.ByteString.UTF8 (ByteString)
 import Data.Pool (Pool)
@@ -13,7 +13,7 @@ data DatabaseContext = DatabaseContext
   , connectionString :: !ByteString
   }
 
-makeDatabaseContext :: ByteString -> IO DatabaseContext
-makeDatabaseContext connectionString = do
+make :: ByteString -> IO DatabaseContext
+make connectionString = do
   connectionPool <- Pool.createPool (connectPostgreSQL connectionString) close 3 60 10
   pure DatabaseContext {..}
