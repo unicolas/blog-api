@@ -3,7 +3,7 @@
 
 module Controllers.PostControllerSpec (spec) where
 
-import Constructors (makeId, makeUtc)
+import Constructors (makeId, makeUtc, serverError)
 import Controllers.PostController (createPost, deletePost, getPost, getPosts)
 import Data.Function ((&))
 import qualified Data.Map.Strict as Map
@@ -21,7 +21,6 @@ import Models.Types.Id (Id(..))
 import RequestContext (RequestContext(..))
 import Test.Hspec
   ( Spec
-  , anyException
   , context
   , describe
   , it
@@ -33,11 +32,11 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
+  let idUser = makeId "0a6c8791-ab24-4b87-8289-411582c3bab7"
+  let ?requestCtx = RequestContext {RequestContext.userId = idUser}
+
   describe "Given a blog with no posts" $ do
-    let
-      noPosts = StorageMock.emptyStorage
-      idUser = makeId "cb97ab07-8785-4f03-9ead-a2178c680ec2"
-    let ?requestCtx = RequestContext {RequestContext.userId = idUser}
+    let noPosts = StorageMock.emptyStorage
 
     it "Does not find a single post" $ do
       runMock (getPosts Nothing) noPosts `shouldReturn` []
@@ -97,12 +96,15 @@ spec = do
 
     context "When finding by id" $ do
       it "Throws error if not found" $ do
-        runMock (getPost (Id nil)) givenPosts `shouldThrow` anyException
+        runMock (getPost (Id nil)) givenPosts `shouldThrow` serverError 404
 
     context "When deleting a post" $ do
       it "Does not find the post" $ do
         let deleteThenGet idPost = deletePost idPost *> getPost idPost
-        runMock (deleteThenGet fstId) givenPosts `shouldThrow` anyException
+        runMock (deleteThenGet fstId) givenPosts `shouldThrow` serverError 404
 
       it "Throws error if not found" $ do
-        runMock (deletePost (Id nil)) givenPosts `shouldThrow` anyException
+        runMock (deletePost (Id nil)) givenPosts `shouldThrow` serverError 404
+
+      it "Throws error if authored by other user" $ do
+        runMock (deletePost sndId) givenPosts `shouldThrow` serverError 403

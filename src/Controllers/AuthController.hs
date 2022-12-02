@@ -6,7 +6,7 @@
 module Controllers.AuthController (Login, login, checkCreds, LoginRequest(..)) where
 
 import Control.Monad (when)
-import Control.Monad.Catch (MonadThrow(throwM))
+import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
 import Data.Aeson (FromJSON)

@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -13,15 +14,15 @@ module Controllers.PostController
   , deletePost
   ) where
 
-import Control.Monad (unless)
-import Control.Monad.Catch (MonadThrow(throwM))
+import Control.Monad (when)
+import Control.Monad.Catch (MonadThrow, throwM)
 import qualified Controllers.Types.Error as Error
-import Data.Maybe (isJust)
 import Dto.NewPostDto (NewPostDto)
 import qualified Dto.NewPostDto as NewPostDto
 import Dto.PostDto (PostDto)
 import qualified Dto.PostDto as PostDto
-import Models.Post (Post)
+import Models.Post (Post(..))
+import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id)
 import Models.User (User)
 import qualified RequestContext
@@ -81,9 +82,11 @@ type DeletePost = Base
   :> Capture "postId" (Id Post)
   :> Http.Delete '[JSON] Http.NoContent
 
-deletePost :: (MonadThrow m, PostStore m) => Id Post -> m Http.NoContent
-deletePost postId = do
-  exists <- isJust <$> PostStore.find postId
-  unless exists $ throwM (Error.notFound "Could not find post with such ID.")
-  PostStore.delete postId
-  pure Http.NoContent
+deletePost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)
+  => Id Post -> m Http.NoContent
+deletePost postId = PostStore.find postId >>= \case
+  Nothing -> throwM (Error.notFound "Could not find post with such ID.")
+  Just (Entity _ Post{userId}) -> do
+    when (userId /= RequestContext.userId ?requestCtx) $ throwM Error.forbidden
+    PostStore.delete postId
+    pure Http.NoContent

@@ -2,13 +2,14 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Controllers.Types.Error (Error (..), notFound, serverError, unauthorized) where
+module Controllers.Types.Error
+  (Error (..), notFound, serverError, unauthorized, forbidden) where
 
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (ToJSON)
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Servant (ServerError(..), err401, err404, err500)
+import Servant (ServerError(..), err401, err403, err404, err500)
 
 newtype Error = Error { error :: Text } deriving (Generic, ToJSON)
 
@@ -26,3 +27,6 @@ serverError = jsonContent . withMessage err500
 
 unauthorized :: ServerError
 unauthorized = jsonContent err401
+
+forbidden :: ServerError
+forbidden = jsonContent err403

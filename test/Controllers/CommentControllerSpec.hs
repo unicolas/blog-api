@@ -3,7 +3,7 @@
 
 module Controllers.CommentControllerSpec (spec) where
 
-import Constructors (makeId, makeUtc)
+import Constructors (makeId, makeUtc, serverError)
 import Controllers.CommentController
   (createComment, deleteComment, getComment, getComments)
 import Data.Function ((&))
@@ -24,7 +24,6 @@ import Models.Types.Id (Id(..))
 import RequestContext (RequestContext(..))
 import Test.Hspec
   ( Spec
-  , anyException
   , context
   , describe
   , it
@@ -59,12 +58,11 @@ spec = do
       [ (fstId, Entity fstId fstPost)
       , (sndId, Entity sndId sndPost)
       ]
+    idUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
+  let ?requestCtx = RequestContext {RequestContext.userId = idUser}
 
   describe "Given a blog with no comments" $ do
-    let
-      noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
-      idUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
-    let ?requestCtx = RequestContext {RequestContext.userId = idUser}
+    let noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
 
     it "Does not find a single comment" $ do
       runMock (getComments Nothing) noComments `shouldReturn` []
@@ -93,20 +91,21 @@ spec = do
   describe "Given a blog with comments" $ do
     let
       fstCommentId = makeId "127c2982-355b-4e06-9313-b63db0d1aa49"
-      commentUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
+      fstCommentUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
       fstComment = Comment
         { Comment.title = "Comment 1"
         , Comment.content = "Comment content 1"
-        , Comment.userId = commentUser
+        , Comment.userId = fstCommentUser
         , Comment.postId = fstId
         , Comment.createdAt = makeUtc "2022-09-12 00:00"
         , Comment.updatedAt = makeUtc "2022-09-12 00:00"
         }
       sndCommentId = makeId "e1da0ad5-d7fb-4c80-bb53-999d6e7c6147"
+      sndCommentUser = makeId "0a6c8791-ab24-4b87-8289-411582c3bab7"
       sndComment = Comment
         { Comment.title = "Comment 2"
         , Comment.content = "Comment content 2"
-        , Comment.userId = commentUser
+        , Comment.userId = sndCommentUser
         , Comment.postId = sndId
         , Comment.createdAt = makeUtc "2022-09-17 00:00"
         , Comment.updatedAt = makeUtc "2022-09-17 00:00"
@@ -130,12 +129,15 @@ spec = do
 
     context "When finding by id" $ do
       it "Throws error if not found" $ do
-        runMock (getComment (Id nil)) givenComments `shouldThrow` anyException
+        runMock (getComment (Id nil)) givenComments `shouldThrow` serverError 404
 
     context "When deleting a comment" $ do
       it "Does not find the comment" $ do
         let deleteThenGet idComment = deleteComment idComment *> getComment idComment
-        runMock (deleteThenGet fstCommentId) givenComments `shouldThrow` anyException
+        runMock (deleteThenGet fstCommentId) givenComments `shouldThrow` serverError 404
 
       it "Throws error if not found" $ do
-        runMock (deleteComment (Id nil)) givenComments `shouldThrow` anyException
+        runMock (deleteComment (Id nil)) givenComments `shouldThrow` serverError 404
+
+      it "Throws error if authored by other user" $ do
+        runMock (deleteComment sndCommentId) givenComments `shouldThrow` serverError 403
