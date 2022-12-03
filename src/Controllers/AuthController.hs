@@ -26,7 +26,7 @@ data LoginRequest = LoginRequest
   { username :: !Text
   , password :: !Text
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Generic, FromJSON)
 
 type LoginHeaders = Http.Headers
   '[ Http.Header "Set-Cookie" Sas.SetCookie
