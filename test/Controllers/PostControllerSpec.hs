@@ -46,8 +46,6 @@ spec = do
         newPost = NewPostDto
           { NewPostDto.title = "Title"
           , NewPostDto.content = "Content"
-          , NewPostDto.createdAt = makeUtc "2022-09-12 00:00"
-          , NewPostDto.updatedAt = makeUtc "2022-09-12 00:00"
           }
 
       it "Creates the first post" $ do

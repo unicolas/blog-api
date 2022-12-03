@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Stores.CommentStore (CommentStore (..)) where
 
@@ -43,14 +44,14 @@ instance CommentStore App where
     liftIO $ withResource pool (`query_` sql)
 
   save :: Comment -> App (Maybe (Id Comment))
-  save comment = do
+  save Comment{..} = do
     let sql = "INSERT INTO comments \
             \  (id, title, content, created_at, updated_at, post_id, user_id) \
-            \  VALUES (gen_random_uuid(), ?, ?, now(), now(), ?, ?) \
+            \  VALUES (gen_random_uuid(), ?, ?, ?, ?, ?, ?) \
             \  RETURNING id"
     pool <- asks $ connectionPool . databaseContext
     ids <- liftIO $ withResource pool
-      $ \conn -> query conn sql (title comment, content comment, postId comment, userId comment)
+      $ \conn -> query conn sql (title, content, createdAt, updatedAt, postId, userId)
     pure $ fromOnly <$> listToMaybe ids
 
   delete :: Id Comment -> App ()

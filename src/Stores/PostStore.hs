@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Stores.PostStore (PostStore (..)) where
 
@@ -43,13 +44,13 @@ instance PostStore App where
     liftIO $ withResource pool (`query_` sql)
 
   save :: Post -> App (Maybe (Id Post))
-  save post = do
+  save Post{..} = do
     let sql = "INSERT INTO posts (id, title, content, created_at, updated_at, user_id) \
-            \  VALUES (gen_random_uuid(), ?, ?, now(), now(), ?) \
+            \  VALUES (gen_random_uuid(), ?, ?, ?, ?, ?) \
             \  RETURNING id"
     pool <- asks $ connectionPool . databaseContext
     ids <- liftIO $ withResource pool
-      $ \conn -> query conn sql (title post, content post, userId post)
+      $ \conn -> query conn sql (title, content, createdAt, updatedAt, userId)
     pure $ fromOnly <$> listToMaybe ids
 
   delete :: Id Post -> App ()

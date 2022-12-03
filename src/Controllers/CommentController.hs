@@ -16,7 +16,9 @@ module Controllers.CommentController
 
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
+import Data.Time (getCurrentTime)
 import Dto.CommentDto (CommentDto)
 import qualified Dto.CommentDto as CommentDto
 import Dto.NewCommentDto (NewCommentDto)
@@ -35,7 +37,8 @@ import Stores.CommentStore (CommentStore)
 
 type Routes = GetComments :<|> GetComment :<|> CreateComment :<|> DeleteComment
 
-handlers :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)
+handlers :: (?requestCtx :: RequestContext)
+  => (MonadThrow m, CommentStore m, MonadIO m)
   => ServerT Routes m
 handlers = getComments :<|> getComment :<|> createComment :<|> deleteComment
 
@@ -69,10 +72,14 @@ type CreateComment = Base
   :> ReqBody '[JSON] NewCommentDto
   :> Http.Post '[JSON] (Id Comment)
 
-createComment :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)
+createComment :: (?requestCtx :: RequestContext)
+  => (MonadThrow m, CommentStore m, MonadIO m)
   => NewCommentDto -> m (Id Comment)
 createComment dto = do
-  let comment = NewCommentDto.toComment dto (RequestContext.userId ?requestCtx)
+  now <- liftIO getCurrentTime
+  let
+    userId = RequestContext.userId ?requestCtx
+    comment = NewCommentDto.toComment dto userId now now
   CommentStore.save comment >>= \case
     Just commentId -> pure commentId
     Nothing -> throwM (Error.serverError "Failed to create comment.")

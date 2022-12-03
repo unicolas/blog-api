@@ -16,7 +16,9 @@ module Controllers.PostController
 
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
+import Data.Time (getCurrentTime)
 import Dto.NewPostDto (NewPostDto)
 import qualified Dto.NewPostDto as NewPostDto
 import Dto.PostDto (PostDto)
@@ -35,7 +37,7 @@ import Stores.PostStore (PostStore)
 
 type Routes = GetPosts :<|> GetPost :<|> CreatePost :<|> DeletePost
 
-handlers :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)
+handlers :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m, MonadIO m)
   => ServerT Routes m
 handlers = getPosts :<|> getPost :<|> createPost :<|> deletePost
 
@@ -69,10 +71,11 @@ type CreatePost = Base
   :> ReqBody '[JSON] NewPostDto
   :> Http.Post '[JSON] (Id Post)
 
-createPost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)
+createPost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m, MonadIO m)
   => NewPostDto -> m (Id Post)
 createPost dto = do
-  let post = NewPostDto.toPost dto (RequestContext.userId ?requestCtx)
+  now <- liftIO getCurrentTime
+  let post = NewPostDto.toPost dto (RequestContext.userId ?requestCtx) now now
   PostStore.save post >>= \case
     Just postId -> pure postId
     Nothing -> throwM (Error.serverError "Failed to create post.")

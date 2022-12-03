@@ -17,11 +17,9 @@ data NewCommentDto = NewCommentDto
   { title :: !Text
   , content :: !Text
   , postId :: !UUID
-  , createdAt :: !UTCTime
-  , updatedAt :: !UTCTime
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-toComment :: NewCommentDto  -> Id User -> Comment
-toComment
-  NewCommentDto {postId = pid , ..} userId = Comment {postId = Id pid, ..}
+toComment :: NewCommentDto  -> Id User ->UTCTime -> UTCTime ->  Comment
+toComment NewCommentDto {postId = pid , ..} userId createdAt updatedAt
+  = Comment {postId = Id pid, ..}

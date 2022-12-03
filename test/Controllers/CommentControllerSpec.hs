@@ -73,8 +73,6 @@ spec = do
           { NewCommentDto.title = "Title"
           , NewCommentDto.content = "Content"
           , NewCommentDto.postId = fstId & \(Id uuid) -> uuid
-          , NewCommentDto.createdAt = makeUtc "2022-09-12 00:00"
-          , NewCommentDto.updatedAt = makeUtc "2022-09-12 00:00"
           }
 
       it "Creates the first comment" $ do

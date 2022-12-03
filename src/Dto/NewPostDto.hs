@@ -15,10 +15,8 @@ import Models.User (User)
 data NewPostDto = NewPostDto
   { title :: !Text
   , content :: !Text
-  , createdAt :: !UTCTime
-  , updatedAt :: !UTCTime
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-toPost :: NewPostDto -> Id User -> Post
-toPost NewPostDto {..} userId = Post {..}
+toPost :: NewPostDto -> Id User -> UTCTime -> UTCTime -> Post
+toPost NewPostDto {..} userId createdAt updatedAt = Post {..}
