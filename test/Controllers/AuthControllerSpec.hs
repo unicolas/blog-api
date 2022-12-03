@@ -3,7 +3,7 @@
 module Controllers.AuthControllerSpec (spec) where
 
 import Constructors (makeId)
-import Controllers.AuthController (LoginRequest(LoginRequest), checkCreds)
+import Controllers.AuthController (LoginRequest(LoginRequest), login)
 import qualified Controllers.AuthController as LoginRequest
 import Data.ByteString.UTF8 (toString)
 import Data.List (isPrefixOf)
@@ -59,7 +59,7 @@ spec = do
           }
       it "Accepts login" $ do
         key <- Sas.generateKey
-        let check = checkCreds defaultCookieSettings (defaultJWTSettings key)
+        let check = login defaultCookieSettings (defaultJWTSettings key)
         response <- runMock (check request) givenUsers
         let headers = Http.getHeaders response
         length headers `shouldBe` 2
@@ -75,5 +75,5 @@ spec = do
           }
       it "Rejects login" $ do
         key <- Sas.generateKey
-        let check = checkCreds defaultCookieSettings (defaultJWTSettings key)
+        let check = login defaultCookieSettings (defaultJWTSettings key)
         runMock (check request) givenUsers `shouldThrow` anyException
