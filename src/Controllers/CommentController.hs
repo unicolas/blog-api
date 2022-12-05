@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Controllers.CommentController
@@ -18,15 +19,16 @@ import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
+import Data.Maybe (isNothing)
 import Data.Time (getCurrentTime)
 import Dto.CommentDto (CommentDto)
 import qualified Dto.CommentDto as CommentDto
-import Dto.NewCommentDto (NewCommentDto)
+import Dto.NewCommentDto (NewCommentDto(..))
 import qualified Dto.NewCommentDto as NewCommentDto
 import Models.Comment (Comment(..))
 import Models.Post (Post)
 import Models.Types.Entity (Entity(..))
-import Models.Types.Id (Id)
+import Models.Types.Id (Id(..))
 import qualified RequestContext
 import RequestContext (RequestContext)
 import qualified Servant as Http (Delete, Get, NoContent(..), Post)
@@ -34,11 +36,13 @@ import Servant (Capture, JSON, ReqBody, ServerT, type (:<|>)(..), type (:>))
 import Servant.API (QueryParam)
 import qualified Stores.CommentStore as CommentStore
 import Stores.CommentStore (CommentStore)
+import qualified Stores.PostStore as PostStore
+import Stores.PostStore (PostStore)
 
 type Routes = GetComments :<|> GetComment :<|> CreateComment :<|> DeleteComment
 
 handlers :: (?requestCtx :: RequestContext)
-  => (MonadThrow m, CommentStore m, MonadIO m)
+  => (MonadThrow m, CommentStore m, MonadIO m, PostStore m)
   => ServerT Routes m
 handlers = getComments :<|> getComment :<|> createComment :<|> deleteComment
 
@@ -73,9 +77,12 @@ type CreateComment = Base
   :> Http.Post '[JSON] (Id Comment)
 
 createComment :: (?requestCtx :: RequestContext)
-  => (MonadThrow m, CommentStore m, MonadIO m)
+  => (MonadThrow m, CommentStore m, PostStore m, MonadIO m)
   => NewCommentDto -> m (Id Comment)
-createComment dto = do
+createComment dto@NewCommentDto{..} = do
+  maybePost <- PostStore.find (Id postId)
+  when (isNothing maybePost)
+    $ throwM (Error.notFound "Could not find post with such ID.")
   now <- liftIO getCurrentTime
   let
     userId = RequestContext.userId ?requestCtx

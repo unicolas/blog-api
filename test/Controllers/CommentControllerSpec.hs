@@ -13,6 +13,7 @@ import qualified Dto.CommentDto as CommentDto
 import Dto.NewCommentDto (NewCommentDto(..))
 import qualified Dto.NewCommentDto as NewCommentDto
 import Mocks.CommentStore ()
+import Mocks.PostStore ()
 import Mocks.StorageMock (runMock)
 import qualified Mocks.StorageMock as StorageMock
 import Models.Comment (Comment(..))
@@ -85,6 +86,10 @@ spec = do
         CommentDto.title comment `shouldBe` NewCommentDto.title newComment
         CommentDto.content comment `shouldBe` NewCommentDto.content newComment
         CommentDto.authorId comment `shouldBe` (idUser & \(Id uuid) -> uuid)
+
+      it "Throws error if commented post does not exist" $ do
+        let newComment' = newComment{NewCommentDto.postId = nil}
+        runMock (createComment newComment') noComments `shouldThrow` serverError 404
 
   describe "Given a blog with comments" $ do
     let
