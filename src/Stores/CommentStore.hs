@@ -9,7 +9,7 @@ import App (App)
 import AppContext (AppContext(..))
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Control.Monad.Reader.Class (asks)
+import Control.Monad.Reader (asks)
 import Data.Maybe (listToMaybe)
 import Data.Pool (withResource)
 import Database.PostgreSQL.Simple (execute, fromOnly, query, query_)
@@ -62,6 +62,8 @@ instance CommentStore App where
 
   findByPost :: Id Post -> App [Entity Comment]
   findByPost idPost = do
-    let sql = "SELECT * FROM comments WHERE post_id = ?"
+    let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
+            \  FROM comments \
+            \  WHERE post_id = ?"
     pool <- asks $ connectionPool . databaseContext
     liftIO $ withResource pool $ \conn -> query conn sql [idPost]

@@ -7,7 +7,7 @@ module Stores.UserStore (UserStore(..)) where
 import App (App)
 import AppContext (AppContext(..))
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Control.Monad.Reader.Class (asks)
+import Control.Monad.Reader (asks)
 import Data.Maybe (listToMaybe)
 import Data.Pool (withResource)
 import Data.Text (Text)
@@ -27,7 +27,9 @@ class Monad m => UserStore m where
 instance UserStore App where
   find :: Id User -> App (Maybe (Entity User))
   find idUser = do
-    let sql = "SELECT * FROM users WHERE id = ?"
+    let sql = "SELECT id, username, email, user_id, password \
+            \  FROM users \
+            \  WHERE id = ?"
     pool <- asks $ connectionPool . databaseContext
     users <- liftIO $ withResource pool $ \conn -> query conn sql [idUser]
     pure $ listToMaybe users
@@ -45,9 +47,9 @@ instance UserStore App where
   findWithCredentials :: Text -> App (Maybe (Aggregate User Credentials))
   findWithCredentials aUsername = do
     let sql = "SELECT id, username, email, user_id, password \
-            \ FROM users \
-            \ INNER JOIN user_credentials ON id = user_id \
-            \ WHERE username = ?"
+            \  FROM users \
+            \  INNER JOIN user_credentials ON id = user_id \
+            \  WHERE username = ?"
     pool <- asks $ connectionPool . databaseContext
     users <- liftIO $ withResource pool $ \conn -> query conn sql [aUsername]
     pure $ listToMaybe users
