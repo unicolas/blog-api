@@ -11,6 +11,7 @@ import Controllers.Api (api, server)
 import Data.ByteString.UTF8 (fromString)
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy(..))
+import DatabaseContext (DatabaseContext)
 import qualified DatabaseContext
 import Network.Wai.Handler.Warp (run)
 import Servant (Context(..), hoistServerWithContext, serveWithContext)
@@ -20,13 +21,11 @@ import Text.Read (readMaybe)
 
 main :: IO ()
 main = loadEnv *> do
-  conn <- Environment.getEnv "DATABASE_URL"
-  dbCtx <- DatabaseContext.make (fromString conn)
-  let ?appCtx = AppContext dbCtx
+  dbCtx <- makeDbCtxFromEnv
   secret <- Environment.lookupEnv "JWT_SECRET"
   key <- maybe Sas.generateKey (pure . Sas.fromSecret . fromString) secret
-  maybePort <- Environment.lookupEnv "APP_PORT"
-  let port = fromMaybe 8000 (maybePort >>= readMaybe)
+  port <- lookupEnvOrDefault "APP_PORT" 8000
+  let ?appCtx = AppContext dbCtx
   let
     jwtSettings = Sas.defaultJWTSettings key
     cookieSettings = Sas.defaultCookieSettings
@@ -39,3 +38,16 @@ main = loadEnv *> do
 
 loadEnv :: IO [(String, String)]
 loadEnv = Dotenv.loadFile Dotenv.defaultConfig
+
+lookupEnvOrDefault :: Read a => String -> a -> IO a
+lookupEnvOrDefault var def = do
+  maybeEnv <- Environment.lookupEnv var
+  pure $ fromMaybe def (maybeEnv >>= readMaybe)
+
+makeDbCtxFromEnv :: IO DatabaseContext
+makeDbCtxFromEnv = do
+  conn <- fromString <$> Environment.getEnv "DATABASE_URL"
+  poolCacheTtl <- lookupEnvOrDefault "POOL_CACHE_TTL" 60
+  poolNumStripes <- lookupEnvOrDefault "POOL_NUM_STRIPES" 2
+  poolMaxPerStripe <- lookupEnvOrDefault "POOL_MAX_PER_STRIPE" 10
+  DatabaseContext.make conn poolCacheTtl poolNumStripes poolMaxPerStripe
