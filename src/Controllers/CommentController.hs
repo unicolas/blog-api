@@ -39,18 +39,17 @@ import Stores.CommentStore (CommentStore)
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
 
-type Routes = GetComments :<|> GetComment :<|> CreateComment :<|> DeleteComment
+type Routes = "comments"
+  :> (GetComments :<|> GetComment :<|> CreateComment :<|> DeleteComment)
 
 handlers :: (?requestCtx :: RequestContext)
   => (MonadThrow m, CommentStore m, MonadIO m, PostStore m)
   => ServerT Routes m
 handlers = getComments :<|> getComment :<|> createComment :<|> deleteComment
 
-type Base = "comments"
-
 -- GET /comments
-type GetComments = Base
-  :> QueryParam "postId" (Id Post)
+type GetComments =
+  QueryParam "postId" (Id Post)
   :> Http.Get '[JSON] [CommentDto]
 
 getComments :: (CommentStore m) => Maybe (Id Post) -> m [CommentDto]
@@ -59,8 +58,8 @@ getComments maybeId = do
   pure $ CommentDto.fromEntity <$> comments
 
 -- GET /comments/:commentId
-type GetComment = Base
-  :> Capture "comment" (Id Comment)
+type GetComment =
+  Capture "comment" (Id Comment)
   :> Http.Get '[JSON] CommentDto
 
 getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
@@ -72,8 +71,8 @@ getComment commentId = do
     Nothing -> throwM (Error.notFound "Could not find comment with such ID.")
 
 -- POST /comments
-type CreateComment = Base
-  :> ReqBody '[JSON] NewCommentDto
+type CreateComment =
+  ReqBody '[JSON] NewCommentDto
   :> Http.Post '[JSON] (Id Comment)
 
 createComment :: (?requestCtx :: RequestContext)
@@ -92,8 +91,8 @@ createComment dto@NewCommentDto{..} = do
     Nothing -> throwM (Error.serverError "Failed to create comment.")
 
 -- DELETE /comments/:postId
-type DeleteComment = Base
-  :> Capture "commentId" (Id Comment)
+type DeleteComment =
+  Capture "commentId" (Id Comment)
   :> Http.Delete '[JSON] Http.NoContent
 
 deleteComment :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)

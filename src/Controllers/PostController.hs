@@ -35,17 +35,16 @@ import Servant
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
 
-type Routes = GetPosts :<|> GetPost :<|> CreatePost :<|> DeletePost
+type Routes = "posts"
+  :> (GetPosts :<|> GetPost :<|> CreatePost :<|> DeletePost)
 
 handlers :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m, MonadIO m)
   => ServerT Routes m
 handlers = getPosts :<|> getPost :<|> createPost :<|> deletePost
 
-type Base = "posts"
-
 -- GET /posts
-type GetPosts = Base
-  :> QueryParam "authorId" (Id User)
+type GetPosts =
+  QueryParam "authorId" (Id User)
   :> Http.Get '[JSON] [PostDto]
 
 getPosts :: (PostStore m) => Maybe (Id User) -> m [PostDto]
@@ -54,8 +53,8 @@ getPosts maybeId = do
   pure $ PostDto.fromEntity <$> posts
 
 -- GET /posts/:postId
-type GetPost = Base
-  :> Capture "postId" (Id Post)
+type GetPost =
+  Capture "postId" (Id Post)
   :> Http.Get '[JSON] PostDto
 
 getPost :: (MonadThrow m, PostStore m) => Id Post -> m PostDto
@@ -67,8 +66,8 @@ getPost postId = do
     Nothing -> throwM (Error.notFound "Could not find post with such ID.")
 
 -- POST /posts
-type CreatePost = Base
-  :> ReqBody '[JSON] NewPostDto
+type CreatePost =
+  ReqBody '[JSON] NewPostDto
   :> Http.Post '[JSON] (Id Post)
 
 createPost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m, MonadIO m)
@@ -81,8 +80,8 @@ createPost dto = do
     Nothing -> throwM (Error.serverError "Failed to create post.")
 
 -- DELETE /posts/:postId
-type DeletePost = Base
-  :> Capture "postId" (Id Post)
+type DeletePost =
+  Capture "postId" (Id Post)
   :> Http.Delete '[JSON] Http.NoContent
 
 deletePost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)
