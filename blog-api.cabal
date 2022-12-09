@@ -58,6 +58,7 @@ library
     , base >=4.7 && <5
     , dotenv
     , exceptions
+    , jose
     , mtl
     , password
     , postgresql-simple
@@ -87,6 +88,7 @@ executable blog-api-exe
     , blog-api
     , dotenv
     , exceptions
+    , jose
     , mtl
     , password
     , postgresql-simple
@@ -129,6 +131,7 @@ test-suite blog-api-test
     , dotenv
     , exceptions
     , hspec
+    , jose
     , mtl
     , password
     , postgresql-simple

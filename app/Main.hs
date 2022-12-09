@@ -8,6 +8,7 @@ import qualified App
 import AppContext (AppContext(..))
 import qualified Configuration.Dotenv as Dotenv
 import Controllers.Api (api, server)
+import Crypto.JOSE (JWK)
 import Data.ByteString.UTF8 (fromString)
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy(..))
@@ -22,8 +23,7 @@ import Text.Read (readMaybe)
 main :: IO ()
 main = loadEnv *> do
   dbCtx <- makeDbCtxFromEnv
-  secret <- Environment.lookupEnv "JWT_SECRET"
-  key <- maybe Sas.generateKey (pure . Sas.fromSecret . fromString) secret
+  key <- makeJwkFromEnv
   port <- lookupEnvOrDefault "APP_PORT" 8000
   let ?appCtx = AppContext dbCtx
   let
@@ -51,3 +51,8 @@ makeDbCtxFromEnv = do
   poolNumStripes <- lookupEnvOrDefault "POOL_NUM_STRIPES" 2
   poolMaxPerStripe <- lookupEnvOrDefault "POOL_MAX_PER_STRIPE" 10
   DatabaseContext.make conn poolCacheTtl poolNumStripes poolMaxPerStripe
+
+makeJwkFromEnv :: IO JWK
+makeJwkFromEnv = do
+  secret <- Environment.lookupEnv "JWT_SECRET"
+  maybe Sas.generateKey (pure . Sas.fromSecret . fromString) secret
