@@ -29,6 +29,8 @@ import Models.Comment (Comment(..))
 import Models.Post (Post)
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
+import Models.Types.Sorting (Order, Sort)
+import qualified Models.Types.Sorting as Sorting
 import qualified RequestContext
 import RequestContext (RequestContext)
 import qualified Servant as Http (Delete, Get, NoContent(..), Post)
@@ -50,11 +52,15 @@ handlers = getComments :<|> getComment :<|> createComment :<|> deleteComment
 -- GET /comments
 type GetComments =
   QueryParam "postId" (Id Post)
+  :> QueryParam "sort" Sort
+  :> QueryParam "order" Order
   :> Http.Get '[JSON] [CommentDto]
 
-getComments :: (CommentStore m) => Maybe (Id Post) -> m [CommentDto]
-getComments maybeId = do
-  comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId
+getComments :: (CommentStore m)
+  => Maybe (Id Post) -> Maybe Sort -> Maybe Order -> m [CommentDto]
+getComments maybeId maybeSort maybeOrder = do
+  let sorting = Sorting.make maybeSort maybeOrder
+  comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId sorting
   pure $ CommentDto.fromEntity <$> comments
 
 -- GET /comments/:commentId
