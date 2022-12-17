@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main (main) where
 
@@ -30,7 +31,7 @@ main = loadEnv *> do
     jwtSettings = Sas.defaultJWTSettings key
     cookieSettings = Sas.defaultCookieSettings
     ctx = cookieSettings :. jwtSettings :. EmptyContext
-    ctxProxy = Proxy :: Proxy '[Sas.CookieSettings, Sas.JWTSettings]
+    ctxProxy = Proxy @'[Sas.CookieSettings, Sas.JWTSettings]
     serverWithCtx = server cookieSettings jwtSettings
     hoistServer = hoistServerWithContext api ctxProxy App.transform serverWithCtx
     app = serveWithContext api ctx hoistServer
