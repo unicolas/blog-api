@@ -52,7 +52,7 @@ instance PostStore StorageMock where
       authored (Entity _ post) = author == userId post
 
 applySorting :: Sorting -> [Entity Post] -> [Entity Post]
-applySorting (sort, order) = applySort sort . applyOrder order
+applySorting (sort, order) = applyOrder order . applySort sort
 
 applySort :: Sort -> [Entity Post] -> [Entity Post]
 applySort = sortBy . \case

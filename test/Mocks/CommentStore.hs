@@ -53,7 +53,7 @@ instance CommentStore StorageMock where
       forPost (Entity _ comment) = idPost == postId comment
 
 applySorting :: Sorting -> [Entity Comment] -> [Entity Comment]
-applySorting (sort, order) = applySort sort . applyOrder order
+applySorting (sort, order) = applyOrder order . applySort sort
 
 applySort :: Sort -> [Entity Comment] -> [Entity Comment]
 applySort = sortBy . \case
