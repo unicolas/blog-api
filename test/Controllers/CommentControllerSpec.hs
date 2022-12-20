@@ -22,6 +22,8 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
+import qualified Models.Types.Sorting as Order (Order(Asc, Desc))
+import qualified Models.Types.Sorting as Sort (Sort(CreatedAt, Title))
 import RequestContext (RequestContext(..))
 import Test.Hspec
   ( Spec
@@ -127,6 +129,23 @@ spec = do
     it "Finds all comments" $ do
       let get = getComments Nothing Nothing Nothing
       runMock (length <$> get) givenComments `shouldReturn` 2
+
+    it "Finds all comments sorted by title descending" $ do
+      let
+        get = getComments Nothing (Just Sort.Title) (Just Order.Desc)
+        expectedTitles = [Comment.title sndComment, Comment.title fstComment]
+      dtos <- runMock get givenComments
+      CommentDto.title <$> dtos `shouldBe` expectedTitles
+
+    it "Finds all posts sorted by created-at ascending" $ do
+      let
+        get = getComments Nothing (Just Sort.CreatedAt) (Just Order.Asc)
+        expectedDates =
+          [ Comment.createdAt fstComment
+          , Comment.createdAt sndComment
+          ]
+      dtos <- runMock get givenComments
+      CommentDto.createdAt <$> dtos `shouldBe` expectedDates
 
     it "Finds all posts by post" $ do
       let getBy = getComments (Just sndId) Nothing Nothing

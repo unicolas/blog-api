@@ -18,6 +18,8 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
+import qualified Models.Types.Sorting as Order (Order(Asc, Desc))
+import qualified Models.Types.Sorting as Sort (Sort(CreatedAt, Title))
 import RequestContext (RequestContext(..))
 import Test.Hspec
   ( Spec
@@ -89,6 +91,20 @@ spec = do
     it "Finds all posts" $ do
       let get = getPosts Nothing Nothing Nothing
       runMock (length <$> get) givenPosts `shouldReturn` 2
+
+    it "Finds all posts sorted by title descending" $ do
+      let
+        get = getPosts Nothing (Just Sort.Title) (Just Order.Desc)
+        expectedTitles = [Post.title sndPost, Post.title fstPost]
+      dtos <- runMock get givenPosts
+      PostDto.title <$> dtos `shouldBe` expectedTitles
+
+    it "Finds all posts sorted by created-at ascending" $ do
+      let
+        get = getPosts Nothing (Just Sort.CreatedAt) (Just Order.Asc)
+        expectedDates = [Post.createdAt fstPost, Post.createdAt sndPost]
+      dtos <- runMock get givenPosts
+      PostDto.createdAt <$> dtos `shouldBe` expectedDates
 
     it "Finds all posts by author" $ do
       let getByAuthor = getPosts (Just sndUser) Nothing Nothing
