@@ -17,14 +17,15 @@ import DatabaseContext (DatabaseContext(..))
 import Models.Post (Post(..))
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
+import Models.Types.Sorting (Sorting, sortExpression)
 import Models.User (User)
 
 class Monad m => PostStore m where
   find :: Id Post -> m (Maybe (Entity Post))
-  findAll :: m [Entity Post]
+  findAll :: Sorting -> m [Entity Post]
   save :: Post -> m (Maybe (Id Post))
   delete :: Id Post -> m ()
-  findByAuthor :: Id User -> m [Entity Post]
+  findByAuthor :: Id User -> Sorting -> m [Entity Post]
 
 instance PostStore App where
   find :: Id Post -> App (Maybe (Entity Post))
@@ -36,10 +37,11 @@ instance PostStore App where
     posts <- liftIO $ withResource pool $ \conn -> query conn sql [idPost]
     pure $ listToMaybe posts
 
-  findAll :: App [Entity Post]
-  findAll = do
+  findAll :: Sorting -> App [Entity Post]
+  findAll sorting = do
     let sql = "SELECT id, title, content, user_id, created_at, updated_at \
-            \  FROM posts"
+            \  FROM posts \
+            \  ORDER BY " <> sortExpression sorting
     pool <- asks $ connectionPool . databaseContext
     liftIO $ withResource pool (`query_` sql)
 
@@ -59,10 +61,11 @@ instance PostStore App where
     pool <- asks $ connectionPool . databaseContext
     void $ liftIO $ withResource pool $ \conn -> execute conn sql [idPost]
 
-  findByAuthor :: Id User -> App [Entity Post]
-  findByAuthor idAuthor = do
+  findByAuthor :: Id User -> Sorting -> App [Entity Post]
+  findByAuthor idAuthor sorting = do
     let sql = "SELECT id, title, content, user_id, created_at, updated_at \
             \  FROM posts \
-            \  WHERE user_id = ?"
+            \  WHERE user_id = ? \
+            \  ORDER BY " <> sortExpression sorting
     pool <- asks $ connectionPool . databaseContext
     liftIO $ withResource pool $ \conn -> query conn sql [idAuthor]

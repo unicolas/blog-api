@@ -26,6 +26,8 @@ import qualified Dto.PostDto as PostDto
 import Models.Post (Post(..))
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id)
+import Models.Types.Sorting (Order, Sort)
+import qualified Models.Types.Sorting as Sorting
 import Models.User (User)
 import qualified RequestContext
 import RequestContext (RequestContext)
@@ -45,12 +47,16 @@ handlers = getPosts :<|> getPost :<|> createPost :<|> deletePost
 -- GET /posts
 type GetPosts =
   QueryParam "authorId" (Id User)
+  :> QueryParam "sort" Sort
+  :> QueryParam "order" Order
   :> Http.Get '[JSON] [PostDto]
 
-getPosts :: (PostStore m) => Maybe (Id User) -> m [PostDto]
-getPosts maybeId = do
-  posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId
-  pure $ PostDto.fromEntity <$> posts
+getPosts :: (PostStore m)
+  => Maybe (Id User) -> Maybe Sort -> Maybe Order -> m [PostDto]
+getPosts maybeId maybeSort maybeOrder = do
+  let sorting = Sorting.make maybeSort maybeOrder
+  posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId sorting
+  pure (PostDto.fromEntity <$> posts)
 
 -- GET /posts/:postId
 type GetPost =

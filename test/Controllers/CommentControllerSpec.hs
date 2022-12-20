@@ -22,6 +22,8 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
+import qualified Models.Types.Sorting as Order (Order(Asc, Desc))
+import qualified Models.Types.Sorting as Sort (Sort(CreatedAt, Title))
 import RequestContext (RequestContext(..))
 import Test.Hspec
   ( Spec
@@ -66,7 +68,8 @@ spec = do
     let noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
 
     it "Does not find a single comment" $ do
-      runMock (getComments Nothing) noComments `shouldReturn` []
+      let get = getComments Nothing Nothing Nothing
+      runMock get noComments `shouldReturn` []
 
     context "When creating a comment" $ do
       let
@@ -77,9 +80,10 @@ spec = do
           }
 
       it "Creates the first comment" $ do
-        comments <- runMock
-          (createComment newComment *> getComments Nothing) noComments
-        length comments `shouldSatisfy` (== 1)
+        let
+          createThenGet = createComment newComment
+            *> getComments Nothing Nothing Nothing
+        runMock (length <$> createThenGet) noComments `shouldReturn` 1
 
       it "Finds the comment" $ do
         comment <- runMock (createComment newComment >>= getComment) noComments
@@ -123,10 +127,29 @@ spec = do
         }
 
     it "Finds all comments" $ do
-      runMock (length <$> getComments Nothing) givenComments `shouldReturn` 2
+      let get = getComments Nothing Nothing Nothing
+      runMock (length <$> get) givenComments `shouldReturn` 2
+
+    it "Finds all comments sorted by title descending" $ do
+      let
+        get = getComments Nothing (Just Sort.Title) (Just Order.Desc)
+        expectedTitles = [Comment.title sndComment, Comment.title fstComment]
+      dtos <- runMock get givenComments
+      CommentDto.title <$> dtos `shouldBe` expectedTitles
+
+    it "Finds all posts sorted by created-at ascending" $ do
+      let
+        get = getComments Nothing (Just Sort.CreatedAt) (Just Order.Asc)
+        expectedDates =
+          [ Comment.createdAt fstComment
+          , Comment.createdAt sndComment
+          ]
+      dtos <- runMock get givenComments
+      CommentDto.createdAt <$> dtos `shouldBe` expectedDates
 
     it "Finds all posts by post" $ do
-      commentsInPost <- runMock (getComments (Just sndId)) givenComments
+      let getBy = getComments (Just sndId) Nothing Nothing
+      commentsInPost <- runMock getBy givenComments
       length commentsInPost `shouldBe` 1
       commentsInPost `shouldSatisfy` all ((== sndId) . Id . CommentDto.postId)
 

@@ -18,13 +18,14 @@ import Models.Comment (Comment(..))
 import Models.Post (Post)
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
+import Models.Types.Sorting (Sorting, sortExpression)
 
 class Monad m => CommentStore m where
   find :: Id Comment -> m (Maybe (Entity Comment))
-  findAll :: m [Entity Comment]
+  findAll :: Sorting ->  m [Entity Comment]
   save :: Comment -> m (Maybe (Id Comment))
   delete :: Id Comment -> m ()
-  findByPost :: Id Post -> m [Entity Comment]
+  findByPost :: Id Post -> Sorting -> m [Entity Comment]
 
 instance CommentStore App where
   find :: Id Comment -> App (Maybe (Entity Comment))
@@ -36,10 +37,11 @@ instance CommentStore App where
     comments <- liftIO $ withResource pool $ \conn -> query conn sql [idComment]
     pure $ listToMaybe comments
 
-  findAll :: App [Entity Comment]
-  findAll = do
+  findAll :: Sorting -> App [Entity Comment]
+  findAll sorting = do
     let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
-            \  FROM comments"
+            \  FROM comments \
+            \  ORDER BY " <> sortExpression sorting
     pool <- asks $ connectionPool . databaseContext
     liftIO $ withResource pool (`query_` sql)
 
@@ -60,10 +62,11 @@ instance CommentStore App where
     pool <- asks $ connectionPool . databaseContext
     void $ liftIO $ withResource pool $ \conn -> execute conn sql [commentId]
 
-  findByPost :: Id Post -> App [Entity Comment]
-  findByPost idPost = do
+  findByPost :: Id Post -> Sorting -> App [Entity Comment]
+  findByPost idPost sorting = do
     let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
             \  FROM comments \
-            \  WHERE post_id = ?"
+            \  WHERE post_id = ? \
+            \  ORDER BY " <> sortExpression sorting
     pool <- asks $ connectionPool . databaseContext
     liftIO $ withResource pool $ \conn -> query conn sql [idPost]

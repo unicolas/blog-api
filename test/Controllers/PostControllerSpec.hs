@@ -18,6 +18,8 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
+import qualified Models.Types.Sorting as Order (Order(Asc, Desc))
+import qualified Models.Types.Sorting as Sort (Sort(CreatedAt, Title))
 import RequestContext (RequestContext(..))
 import Test.Hspec
   ( Spec
@@ -39,7 +41,8 @@ spec = do
     let noPosts = StorageMock.emptyStorage
 
     it "Does not find a single post" $ do
-      runMock (getPosts Nothing) noPosts `shouldReturn` []
+      let get = getPosts Nothing Nothing Nothing
+      runMock get noPosts `shouldReturn` []
 
     context "When creating a post" $ do
       let
@@ -49,8 +52,9 @@ spec = do
           }
 
       it "Creates the first post" $ do
-        posts <- runMock (createPost newPost *> getPosts Nothing) noPosts
-        length posts `shouldSatisfy` (== 1)
+        let
+          createThenGet = createPost newPost *> getPosts Nothing Nothing Nothing
+        runMock (length <$> createThenGet) noPosts `shouldReturn` 1
 
       it "Finds the post" $ do
         post <- runMock (createPost newPost >>= getPost) noPosts
@@ -85,10 +89,26 @@ spec = do
       givenPosts = StorageMock.emptyStorage {StorageMock.posts = posts}
 
     it "Finds all posts" $ do
-      runMock (length <$> getPosts Nothing) givenPosts `shouldReturn` 2
+      let get = getPosts Nothing Nothing Nothing
+      runMock (length <$> get) givenPosts `shouldReturn` 2
+
+    it "Finds all posts sorted by title descending" $ do
+      let
+        get = getPosts Nothing (Just Sort.Title) (Just Order.Desc)
+        expectedTitles = [Post.title sndPost, Post.title fstPost]
+      dtos <- runMock get givenPosts
+      PostDto.title <$> dtos `shouldBe` expectedTitles
+
+    it "Finds all posts sorted by created-at ascending" $ do
+      let
+        get = getPosts Nothing (Just Sort.CreatedAt) (Just Order.Asc)
+        expectedDates = [Post.createdAt fstPost, Post.createdAt sndPost]
+      dtos <- runMock get givenPosts
+      PostDto.createdAt <$> dtos `shouldBe` expectedDates
 
     it "Finds all posts by author" $ do
-      authoredPosts <- runMock (getPosts (Just sndUser)) givenPosts
+      let getByAuthor = getPosts (Just sndUser) Nothing Nothing
+      authoredPosts <- runMock getByAuthor givenPosts
       length authoredPosts `shouldBe` 1
       authoredPosts `shouldSatisfy` all ((== sndUser) . Id . PostDto.authorId)
 
