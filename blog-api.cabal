@@ -43,6 +43,7 @@ library
       Models.Types.Aggregate
       Models.Types.Entity
       Models.Types.Id
+      Models.Types.Sorting
       Models.User
       RequestContext
       Stores.CommentStore

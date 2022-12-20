@@ -39,7 +39,8 @@ spec = do
     let noPosts = StorageMock.emptyStorage
 
     it "Does not find a single post" $ do
-      runMock (getPosts Nothing) noPosts `shouldReturn` []
+      let get = getPosts Nothing Nothing Nothing
+      runMock get noPosts `shouldReturn` []
 
     context "When creating a post" $ do
       let
@@ -49,8 +50,9 @@ spec = do
           }
 
       it "Creates the first post" $ do
-        posts <- runMock (createPost newPost *> getPosts Nothing) noPosts
-        length posts `shouldSatisfy` (== 1)
+        let
+          createThenGet = createPost newPost *> getPosts Nothing Nothing Nothing
+        runMock (length <$> createThenGet) noPosts `shouldReturn` 1
 
       it "Finds the post" $ do
         post <- runMock (createPost newPost >>= getPost) noPosts
@@ -85,10 +87,12 @@ spec = do
       givenPosts = StorageMock.emptyStorage {StorageMock.posts = posts}
 
     it "Finds all posts" $ do
-      runMock (length <$> getPosts Nothing) givenPosts `shouldReturn` 2
+      let get = getPosts Nothing Nothing Nothing
+      runMock (length <$> get) givenPosts `shouldReturn` 2
 
     it "Finds all posts by author" $ do
-      authoredPosts <- runMock (getPosts (Just sndUser)) givenPosts
+      let getByAuthor = getPosts (Just sndUser) Nothing Nothing
+      authoredPosts <- runMock getByAuthor givenPosts
       length authoredPosts `shouldBe` 1
       authoredPosts `shouldSatisfy` all ((== sndUser) . Id . PostDto.authorId)
 

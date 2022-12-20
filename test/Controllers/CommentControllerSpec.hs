@@ -66,7 +66,8 @@ spec = do
     let noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
 
     it "Does not find a single comment" $ do
-      runMock (getComments Nothing) noComments `shouldReturn` []
+      let get = getComments Nothing Nothing Nothing
+      runMock get noComments `shouldReturn` []
 
     context "When creating a comment" $ do
       let
@@ -77,9 +78,10 @@ spec = do
           }
 
       it "Creates the first comment" $ do
-        comments <- runMock
-          (createComment newComment *> getComments Nothing) noComments
-        length comments `shouldSatisfy` (== 1)
+        let
+          createThenGet = createComment newComment
+            *> getComments Nothing Nothing Nothing
+        runMock (length <$> createThenGet) noComments `shouldReturn` 1
 
       it "Finds the comment" $ do
         comment <- runMock (createComment newComment >>= getComment) noComments
@@ -123,10 +125,12 @@ spec = do
         }
 
     it "Finds all comments" $ do
-      runMock (length <$> getComments Nothing) givenComments `shouldReturn` 2
+      let get = getComments Nothing Nothing Nothing
+      runMock (length <$> get) givenComments `shouldReturn` 2
 
     it "Finds all posts by post" $ do
-      commentsInPost <- runMock (getComments (Just sndId)) givenComments
+      let getBy = getComments (Just sndId) Nothing Nothing
+      commentsInPost <- runMock getBy givenComments
       length commentsInPost `shouldBe` 1
       commentsInPost `shouldSatisfy` all ((== sndId) . Id . CommentDto.postId)
 
