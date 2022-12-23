@@ -9,6 +9,7 @@ import qualified App
 import AppContext (AppContext(..))
 import qualified Configuration.Dotenv as Dotenv
 import Controllers.Api (api, server)
+import Controllers.Types.Error (customFormatters)
 import Crypto.JOSE (JWK)
 import Data.ByteString.UTF8 (fromString)
 import Data.Maybe (fromMaybe)
@@ -30,7 +31,7 @@ main = loadEnv *> do
   let
     jwtSettings = Sas.defaultJWTSettings key
     cookieSettings = Sas.defaultCookieSettings
-    ctx = cookieSettings :. jwtSettings :. EmptyContext
+    ctx = cookieSettings :. jwtSettings :. customFormatters :. EmptyContext
     ctxProxy = Proxy @'[Sas.CookieSettings, Sas.JWTSettings]
     serverWithCtx = server cookieSettings jwtSettings
     hoistServer = hoistServerWithContext api ctxProxy App.transform serverWithCtx
