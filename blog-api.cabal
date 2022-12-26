@@ -46,6 +46,7 @@ library
       Models.Types.Sorting
       Models.User
       RequestContext
+      SasOrphans
       Stores.CommentStore
       Stores.PostStore
       Stores.UserStore

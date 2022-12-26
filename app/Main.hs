@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Main (main) where
 
@@ -13,11 +12,10 @@ import Controllers.Types.Error (customFormatters)
 import Crypto.JOSE (JWK)
 import Data.ByteString.UTF8 (fromString)
 import Data.Maybe (fromMaybe)
-import Data.Proxy (Proxy(..))
 import DatabaseContext (DatabaseContext)
 import qualified DatabaseContext
 import Network.Wai.Handler.Warp (run)
-import Servant (Context(..), hoistServerWithContext, serveWithContext)
+import Servant (Context(..), serveWithContextT)
 import qualified Servant.Auth.Server as Sas
 import qualified System.Environment as Environment
 import Text.Read (readMaybe)
@@ -32,10 +30,8 @@ main = loadEnv *> do
     jwtSettings = Sas.defaultJWTSettings key
     cookieSettings = Sas.defaultCookieSettings
     ctx = cookieSettings :. jwtSettings :. customFormatters :. EmptyContext
-    ctxProxy = Proxy @'[Sas.CookieSettings, Sas.JWTSettings]
     serverWithCtx = server cookieSettings jwtSettings
-    hoistServer = hoistServerWithContext api ctxProxy App.transform serverWithCtx
-    app = serveWithContext api ctx hoistServer
+    app = serveWithContextT api ctx App.transform serverWithCtx
   run port app
 
 loadEnv :: IO [(String, String)]

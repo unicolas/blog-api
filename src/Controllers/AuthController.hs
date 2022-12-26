@@ -1,9 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeOperators #-}
 
-module Controllers.AuthController (Login, login, LoginRequest(..)) where
+module Controllers.AuthController (LoginHeaders, login, LoginRequest(..)) where
 
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
@@ -16,8 +15,7 @@ import GHC.Generics (Generic)
 import Models.Credentials (Credentials)
 import qualified Models.Credentials as Credentials
 import Models.Types.Aggregate (Aggregate(Aggregate))
-import qualified Servant as Http (Header, Headers, NoContent(..), Post)
-import Servant (JSON, ReqBody, type (:>))
+import qualified Servant as Http (Header, Headers, NoContent(..))
 import qualified Servant.Auth.Server as Sas
 import qualified Stores.UserStore as UserStore
 import Stores.UserStore (UserStore)
@@ -32,11 +30,6 @@ type LoginHeaders = Http.Headers
   '[ Http.Header "Set-Cookie" Sas.SetCookie
    , Http.Header "Set-Cookie" Sas.SetCookie ]
   Http.NoContent
-
--- POST /login
-type Login = "login"
-  :> ReqBody '[JSON] LoginRequest
-  :> Http.Post '[JSON] LoginHeaders
 
 login :: (MonadThrow m, UserStore m, MonadIO m)
   => Sas.CookieSettings -> Sas.JWTSettings -> LoginRequest -> m LoginHeaders

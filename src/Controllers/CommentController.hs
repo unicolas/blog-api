@@ -4,12 +4,9 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Controllers.CommentController
-  ( Routes
-  , handlers
-  , getComments
+  ( getComments
   , getComment
   , createComment
   , deleteComment
@@ -33,28 +30,11 @@ import Models.Types.Sorting (Order, Sort)
 import qualified Models.Types.Sorting as Sorting
 import qualified RequestContext
 import RequestContext (RequestContext)
-import qualified Servant as Http (Delete, Get, NoContent(..), Post)
-import Servant (Capture, JSON, ReqBody, ServerT, type (:<|>)(..), type (:>))
-import Servant.API (QueryParam)
+import qualified Servant as Http (NoContent(..))
 import qualified Stores.CommentStore as CommentStore
 import Stores.CommentStore (CommentStore)
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
-
-type Routes = "comments"
-  :> (GetComments :<|> GetComment :<|> CreateComment :<|> DeleteComment)
-
-handlers :: (?requestCtx :: RequestContext)
-  => (MonadThrow m, CommentStore m, MonadIO m, PostStore m)
-  => ServerT Routes m
-handlers = getComments :<|> getComment :<|> createComment :<|> deleteComment
-
--- GET /comments
-type GetComments =
-  QueryParam "postId" (Id Post)
-  :> QueryParam "sort" Sort
-  :> QueryParam "order" Order
-  :> Http.Get '[JSON] [CommentDto]
 
 getComments :: (CommentStore m)
   => Maybe (Id Post) -> Maybe Sort -> Maybe Order -> m [CommentDto]
@@ -63,11 +43,6 @@ getComments maybeId maybeSort maybeOrder = do
   comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId sorting
   pure $ CommentDto.fromEntity <$> comments
 
--- GET /comments/:commentId
-type GetComment =
-  Capture "comment" (Id Comment)
-  :> Http.Get '[JSON] CommentDto
-
 getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
 getComment commentId = do
   maybeComment <- CommentStore.find commentId
@@ -75,11 +50,6 @@ getComment commentId = do
   case maybeDto of
     Just dto -> pure dto
     Nothing -> throwM (Error.notFound "Could not find comment with such ID.")
-
--- POST /comments
-type CreateComment =
-  ReqBody '[JSON] NewCommentDto
-  :> Http.Post '[JSON] (Id Comment)
 
 createComment :: (?requestCtx :: RequestContext)
   => (MonadThrow m, CommentStore m, PostStore m, MonadIO m)
@@ -95,11 +65,6 @@ createComment dto@NewCommentDto{..} = do
   CommentStore.save comment >>= \case
     Just commentId -> pure commentId
     Nothing -> throwM (Error.serverError "Failed to create comment.")
-
--- DELETE /comments/:postId
-type DeleteComment =
-  Capture "commentId" (Id Comment)
-  :> Http.Delete '[JSON] Http.NoContent
 
 deleteComment :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)
   => Id Comment -> m Http.NoContent
