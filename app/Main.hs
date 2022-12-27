@@ -7,7 +7,7 @@ module Main (main) where
 import qualified App
 import AppContext (AppContext(..))
 import qualified Configuration.Dotenv as Dotenv
-import Controllers.Api (api, server)
+import qualified Controllers.Api as Api
 import Controllers.Types.Error (customFormatters)
 import Crypto.JOSE (JWK)
 import Data.ByteString.UTF8 (fromString)
@@ -15,8 +15,9 @@ import Data.Maybe (fromMaybe)
 import DatabaseContext (DatabaseContext)
 import qualified DatabaseContext
 import Network.Wai.Handler.Warp (run)
-import Servant (Context(..), serveWithContextT)
+import Servant (Context(..))
 import qualified Servant.Auth.Server as Sas
+import Servant.Server.Generic (genericServeTWithContext)
 import qualified System.Environment as Environment
 import Text.Read (readMaybe)
 
@@ -30,8 +31,8 @@ main = loadEnv *> do
     jwtSettings = Sas.defaultJWTSettings key
     cookieSettings = Sas.defaultCookieSettings
     ctx = cookieSettings :. jwtSettings :. customFormatters :. EmptyContext
-    serverWithCtx = server cookieSettings jwtSettings
-    app = serveWithContextT api ctx App.transform serverWithCtx
+    server = Api.handlers cookieSettings jwtSettings
+    app = genericServeTWithContext App.transform server ctx
   run port app
 
 loadEnv :: IO [(String, String)]

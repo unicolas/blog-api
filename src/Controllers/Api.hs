@@ -4,7 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Controllers.Api (api, server) where
+module Controllers.Api (handlers) where
 
 import App (App)
 import Controllers.AuthController (LoginHeaders, LoginRequest)
@@ -12,7 +12,6 @@ import qualified Controllers.AuthController as AuthController
 import qualified Controllers.CommentController as CommentController
 import qualified Controllers.PostController as PostController
 import qualified Controllers.Types.Error as Error
-import Data.Data (Proxy(Proxy))
 import Dto.CommentDto (CommentDto)
 import Dto.NewCommentDto (NewCommentDto)
 import Dto.NewPostDto (NewPostDto)
@@ -45,14 +44,11 @@ data Api mode = Api
   }
   deriving Generic
 
-server :: Sas.CookieSettings -> Sas.JWTSettings -> Api (AsServerT App)
-server cs jwts = Api
+handlers :: Sas.CookieSettings -> Sas.JWTSettings -> Api (AsServerT App)
+handlers cs jwts = Api
   { login = AuthController.login cs jwts
   , secured = securedHandlers
   }
-
-api :: Proxy (NamedRoutes Api)
-api = Proxy
 
 data SecuredRoutes mode = SecuredRoutes
   { posts :: mode
