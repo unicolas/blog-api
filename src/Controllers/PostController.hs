@@ -3,12 +3,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Controllers.PostController
-  ( Routes
-  , handlers
-  , getPosts
+  ( getPosts
   , getPost
   , createPost
   , deletePost
@@ -31,25 +28,9 @@ import qualified Models.Types.Sorting as Sorting
 import Models.User (User)
 import qualified RequestContext
 import RequestContext (RequestContext)
-import qualified Servant as Http (Delete, Get, NoContent(..), Post)
-import Servant
-  (Capture, JSON, QueryParam, ReqBody, ServerT, type (:<|>)(..), type (:>))
+import qualified Servant as Http (NoContent(..))
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
-
-type Routes = "posts"
-  :> (GetPosts :<|> GetPost :<|> CreatePost :<|> DeletePost)
-
-handlers :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m, MonadIO m)
-  => ServerT Routes m
-handlers = getPosts :<|> getPost :<|> createPost :<|> deletePost
-
--- GET /posts
-type GetPosts =
-  QueryParam "authorId" (Id User)
-  :> QueryParam "sort" Sort
-  :> QueryParam "order" Order
-  :> Http.Get '[JSON] [PostDto]
 
 getPosts :: (PostStore m)
   => Maybe (Id User) -> Maybe Sort -> Maybe Order -> m [PostDto]
@@ -57,11 +38,6 @@ getPosts maybeId maybeSort maybeOrder = do
   let sorting = Sorting.make maybeSort maybeOrder
   posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId sorting
   pure (PostDto.fromEntity <$> posts)
-
--- GET /posts/:postId
-type GetPost =
-  Capture "postId" (Id Post)
-  :> Http.Get '[JSON] PostDto
 
 getPost :: (MonadThrow m, PostStore m) => Id Post -> m PostDto
 getPost postId = do
@@ -71,11 +47,6 @@ getPost postId = do
     Just dto -> pure dto
     Nothing -> throwM (Error.notFound "Could not find post with such ID.")
 
--- POST /posts
-type CreatePost =
-  ReqBody '[JSON] NewPostDto
-  :> Http.Post '[JSON] (Id Post)
-
 createPost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m, MonadIO m)
   => NewPostDto -> m (Id Post)
 createPost dto = do
@@ -84,11 +55,6 @@ createPost dto = do
   PostStore.save post >>= \case
     Just postId -> pure postId
     Nothing -> throwM (Error.serverError "Failed to create post.")
-
--- DELETE /posts/:postId
-type DeletePost =
-  Capture "postId" (Id Post)
-  :> Http.Delete '[JSON] Http.NoContent
 
 deletePost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)
   => Id Post -> m Http.NoContent

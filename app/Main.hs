@@ -1,24 +1,23 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Main (main) where
 
 import qualified App
 import AppContext (AppContext(..))
 import qualified Configuration.Dotenv as Dotenv
-import Controllers.Api (api, server)
+import qualified Controllers.Api as Api
 import Controllers.Types.Error (customFormatters)
 import Crypto.JOSE (JWK)
 import Data.ByteString.UTF8 (fromString)
 import Data.Maybe (fromMaybe)
-import Data.Proxy (Proxy(..))
 import DatabaseContext (DatabaseContext)
 import qualified DatabaseContext
 import Network.Wai.Handler.Warp (run)
-import Servant (Context(..), hoistServerWithContext, serveWithContext)
+import Servant (Context(..))
 import qualified Servant.Auth.Server as Sas
+import Servant.Server.Generic (genericServeTWithContext)
 import qualified System.Environment as Environment
 import Text.Read (readMaybe)
 
@@ -32,10 +31,8 @@ main = loadEnv *> do
     jwtSettings = Sas.defaultJWTSettings key
     cookieSettings = Sas.defaultCookieSettings
     ctx = cookieSettings :. jwtSettings :. customFormatters :. EmptyContext
-    ctxProxy = Proxy @'[Sas.CookieSettings, Sas.JWTSettings]
-    serverWithCtx = server cookieSettings jwtSettings
-    hoistServer = hoistServerWithContext api ctxProxy App.transform serverWithCtx
-    app = serveWithContext api ctx hoistServer
+    server = Api.handlers cookieSettings jwtSettings
+    app = genericServeTWithContext App.transform server ctx
   run port app
 
 loadEnv :: IO [(String, String)]
