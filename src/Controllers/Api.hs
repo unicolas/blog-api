@@ -69,12 +69,15 @@ securedHandlers = \case
     where ?requestCtx = RequestContext.make user
   _ -> Sas.throwAll Error.unauthorized
 
+type OrderParam = QueryParam "order" Order
+type SortByParam = QueryParam "sortBy"
+
 data PostRoutes mode = PostRoutes
   { getPosts :: mode
       -- GET /posts
       :- QueryParam "authorId" (Id User)
-      :> QueryParam "sort" Sort
-      :> QueryParam "order" Order
+      :> SortByParam Sort
+      :> OrderParam
       :> Http.Get '[JSON] [PostDto]
   , getPost :: mode
       -- GET /posts/:postId
@@ -104,8 +107,8 @@ data CommentRoutes mode = CommentRoutes
   { getComments :: mode
       -- GET /comments
       :- QueryParam "postId" (Id Post)
-      :> QueryParam "sort" Sort
-      :> QueryParam "order" Order
+      :> SortByParam Sort
+      :> OrderParam
       :> Http.Get '[JSON] [CommentDto]
   , getComment :: mode
       -- GET /comments/:commentId
