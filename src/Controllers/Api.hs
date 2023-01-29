@@ -15,10 +15,12 @@ import qualified Controllers.Types.Error as Error
 import Dto.CommentDto (CommentDto)
 import Dto.NewCommentDto (NewCommentDto)
 import Dto.NewPostDto (NewPostDto)
+import Dto.Page (Page)
 import Dto.PostDto (PostDto)
 import GHC.Generics (Generic)
 import Models.Comment (Comment)
 import Models.Post (Post)
+import Models.Types.Cursor (Cursor)
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
 import Models.Types.Sorting (Order, Sort)
@@ -71,6 +73,8 @@ securedHandlers = \case
 
 type OrderParam = QueryParam "order" Order
 type SortByParam = QueryParam "sortBy"
+type CursorParam = QueryParam "after" Cursor
+type PageSizeParam = QueryParam "pageSize" Int
 
 data PostRoutes mode = PostRoutes
   { getPosts :: mode
@@ -78,7 +82,9 @@ data PostRoutes mode = PostRoutes
       :- QueryParam "authorId" (Id User)
       :> SortByParam Sort
       :> OrderParam
-      :> Http.Get '[JSON] [PostDto]
+      :> CursorParam
+      :> PageSizeParam
+      :> Http.Get '[JSON] (Page PostDto)
   , getPost :: mode
       -- GET /posts/:postId
       :- Capture "postId" (Id Post)

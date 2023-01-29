@@ -36,11 +36,13 @@ library
       Dto.CommentDto
       Dto.NewCommentDto
       Dto.NewPostDto
+      Dto.Page
       Dto.PostDto
       Models.Comment
       Models.Credentials
       Models.Post
       Models.Types.Aggregate
+      Models.Types.Cursor
       Models.Types.Entity
       Models.Types.Id
       Models.Types.Sorting
@@ -58,6 +60,7 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64
     , dotenv
     , exceptions
     , jose
@@ -87,6 +90,7 @@ executable blog-api-exe
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64
     , blog-api
     , dotenv
     , exceptions
@@ -128,6 +132,7 @@ test-suite blog-api-test
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64
     , blog-api
     , containers
     , dotenv

@@ -13,7 +13,7 @@ import GHC.Generics (Generic)
 import qualified Servant
 
 newtype Id phantom = Id UUID
-  deriving (Show, Eq, Ord, Generic, FromJSON, ToJSON)
+  deriving (Show, Read, Eq, Ord, Generic, FromJSON, ToJSON)
 
 instance Servant.FromHttpApiData (Id phantom) where
   parseUrlPiece :: Text -> Either Text (Id phantom)
