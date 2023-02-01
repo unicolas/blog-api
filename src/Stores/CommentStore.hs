@@ -12,20 +12,21 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader (asks)
 import Data.Maybe (listToMaybe)
 import Data.Pool (withResource)
-import Database.PostgreSQL.Simple (execute, fromOnly, query, query_)
+import Database.PostgreSQL.Simple (execute, fromOnly, query)
 import DatabaseContext (DatabaseContext(..))
 import Models.Comment (Comment(..))
 import Models.Post (Post)
+import Models.Types.Cursor (Cursor, cursorExpression)
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
 import Models.Types.Sorting (Sorting, sortExpression)
 
 class Monad m => CommentStore m where
   find :: Id Comment -> m (Maybe (Entity Comment))
-  findAll :: Sorting ->  m [Entity Comment]
+  findAll :: Sorting -> Maybe Cursor -> Int -> m [Entity Comment]
   save :: Comment -> m (Maybe (Id Comment))
   delete :: Id Comment -> m ()
-  findByPost :: Id Post -> Sorting -> m [Entity Comment]
+  findByPost :: Id Post -> Sorting -> Maybe Cursor -> Int -> m [Entity Comment]
 
 instance CommentStore App where
   find :: Id Comment -> App (Maybe (Entity Comment))
@@ -37,13 +38,17 @@ instance CommentStore App where
     comments <- liftIO $ withResource pool $ \conn -> query conn sql [idComment]
     pure $ listToMaybe comments
 
-  findAll :: Sorting -> App [Entity Comment]
-  findAll sorting = do
-    let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
-            \  FROM comments \
-            \  ORDER BY " <> sortExpression sorting
-    pool <- asks $ connectionPool . databaseContext
-    liftIO $ withResource pool (`query_` sql)
+  findAll :: Sorting -> Maybe Cursor -> Int -> App [Entity Comment]
+  findAll sorting maybeCursor pageSize = do
+    let
+      sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
+          \  FROM comments "
+          <> whereCursor maybeCursor <> " \
+          \  ORDER BY " <> sortExpression sorting <> " \
+          \  FETCH FIRST ? ROWS ONLY"
+      whereCursor = maybe mempty (\c -> "WHERE " <> cursorExpression c)
+    pool <- asks (connectionPool . databaseContext)
+    liftIO $ withResource pool $ \conn -> query conn sql [pageSize + 1]
 
   save :: Comment -> App (Maybe (Id Comment))
   save Comment{..} = do
@@ -62,11 +67,14 @@ instance CommentStore App where
     pool <- asks $ connectionPool . databaseContext
     void $ liftIO $ withResource pool $ \conn -> execute conn sql [commentId]
 
-  findByPost :: Id Post -> Sorting -> App [Entity Comment]
-  findByPost idPost sorting = do
-    let sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
-            \  FROM comments \
-            \  WHERE post_id = ? \
-            \  ORDER BY " <> sortExpression sorting
-    pool <- asks $ connectionPool . databaseContext
-    liftIO $ withResource pool $ \conn -> query conn sql [idPost]
+  findByPost :: Id Post -> Sorting -> Maybe Cursor -> Int -> App [Entity Comment]
+  findByPost idPost sorting maybeCursor pageSize = do
+    let
+      sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
+          \  FROM comments \
+          \  WHERE post_id = ? " <> andCursor maybeCursor <> " \
+          \  ORDER BY " <> sortExpression sorting <> " \
+          \  FETCH FIRST ? ROWS ONLY"
+      andCursor = maybe mempty (\c -> "AND " <> cursorExpression c)
+    pool <- asks (connectionPool . databaseContext)
+    liftIO $ withResource pool $ \conn -> query conn sql (idPost, pageSize + 1)

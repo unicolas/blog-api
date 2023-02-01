@@ -115,7 +115,9 @@ data CommentRoutes mode = CommentRoutes
       :- QueryParam "postId" (Id Post)
       :> SortByParam Sort
       :> OrderParam
-      :> Http.Get '[JSON] [CommentDto]
+      :> CursorParam
+      :> PageSizeParam
+      :> Http.Get '[JSON] (Page CommentDto)
   , getComment :: mode
       -- GET /comments/:commentId
       :- Capture "comment" (Id Comment)

@@ -58,11 +58,11 @@ cursorExpression = \case
   UpdatedAtCursor (v, Id i) o -> compose "updated_at" o (iso8601Show v) (show i)
   TitleCursor (v, Id i) o -> compose "title" o (unpack v) (show i)
   where
-    quote = ("'" <>) . (<> "'")
-    compose field order value id' = mconcat
+    quote str = mconcat ["'", str , "'"]
+    compose field order value id' = fromString $ mconcat
       [ "(", field, ", id)"
       , case order of
           Asc -> " >= "
           Desc -> " <= "
-      , fromString $ "(" <> quote value <> ", " <> quote id' <> ")"
+      , "(", quote value, ", ", quote id', ")"
       ]
