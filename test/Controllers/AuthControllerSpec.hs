@@ -2,7 +2,6 @@
 
 module Controllers.AuthControllerSpec (spec) where
 
-import Constructors (makeId)
 import Controllers.AuthController (LoginRequest(LoginRequest), login)
 import qualified Controllers.AuthController as LoginRequest
 import Data.ByteString.UTF8 (toString)
@@ -29,6 +28,7 @@ import Test.Hspec
   , shouldSatisfy
   , shouldThrow
   )
+import Utils (makeId)
 
 spec :: Spec
 spec = do

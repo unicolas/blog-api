@@ -3,13 +3,13 @@
 
 module Controllers.PostControllerSpec (spec) where
 
-import Constructors (makeId, makeUtc, serverError)
 import Controllers.PostController (createPost, deletePost, getPost, getPosts)
 import Data.Function ((&))
 import qualified Data.Map.Strict as Map
 import Data.UUID (nil)
 import Dto.NewPostDto (NewPostDto(NewPostDto))
 import qualified Dto.NewPostDto as NewPostDto
+import qualified Dto.Page as Page
 import qualified Dto.PostDto as PostDto
 import Mocks.PostStore ()
 import Mocks.StorageMock (runMock)
@@ -31,6 +31,7 @@ import Test.Hspec
   , shouldSatisfy
   , shouldThrow
   )
+import Utils (emptyPage, makeId, makeUtc, serverError)
 
 spec :: Spec
 spec = do
@@ -41,8 +42,8 @@ spec = do
     let noPosts = StorageMock.emptyStorage
 
     it "Does not find a single post" $ do
-      let get = getPosts Nothing Nothing Nothing
-      runMock get noPosts `shouldReturn` []
+      let get = getPosts Nothing Nothing Nothing Nothing Nothing
+      runMock get noPosts `shouldReturn` emptyPage
 
     context "When creating a post" $ do
       let
@@ -53,8 +54,9 @@ spec = do
 
       it "Creates the first post" $ do
         let
-          createThenGet = createPost newPost *> getPosts Nothing Nothing Nothing
-        runMock (length <$> createThenGet) noPosts `shouldReturn` 1
+          createThenGet = createPost newPost
+            *> getPosts Nothing Nothing Nothing Nothing Nothing
+        runMock (length . Page.content <$> createThenGet) noPosts `shouldReturn` 1
 
       it "Finds the post" $ do
         post <- runMock (createPost newPost >>= getPost) noPosts
@@ -89,26 +91,32 @@ spec = do
       givenPosts = StorageMock.emptyStorage {StorageMock.posts = posts}
 
     it "Finds all posts" $ do
-      let get = getPosts Nothing Nothing Nothing
-      runMock (length <$> get) givenPosts `shouldReturn` 2
+      let get = getPosts Nothing Nothing Nothing Nothing Nothing
+      runMock (length . Page.content <$> get) givenPosts `shouldReturn` 2
 
     it "Finds all posts sorted by title descending" $ do
       let
-        get = getPosts Nothing (Just Sort.Title) (Just Order.Desc)
+        get = getPosts Nothing (Just Sort.Title) (Just Order.Desc) Nothing Nothing
         expectedTitles = [Post.title sndPost, Post.title fstPost]
-      dtos <- runMock get givenPosts
-      PostDto.title <$> dtos `shouldBe` expectedTitles
+      page <- runMock get givenPosts
+      PostDto.title <$> Page.content page `shouldBe` expectedTitles
+      Page.hasNextPage page `shouldBe` False
+      Page.nextCursor page `shouldBe` Nothing
+      Page.pageSize page `shouldBe` Page.defaultPageSize
 
     it "Finds all posts sorted by created-at ascending" $ do
       let
-        get = getPosts Nothing (Just Sort.CreatedAt) (Just Order.Asc)
+        get = getPosts Nothing (Just Sort.CreatedAt) (Just Order.Asc) Nothing Nothing
         expectedDates = [Post.createdAt fstPost, Post.createdAt sndPost]
-      dtos <- runMock get givenPosts
-      PostDto.createdAt <$> dtos `shouldBe` expectedDates
+      page <- runMock get givenPosts
+      PostDto.createdAt <$> Page.content page `shouldBe` expectedDates
+      Page.hasNextPage page `shouldBe` False
+      Page.nextCursor page `shouldBe` Nothing
+      Page.pageSize page `shouldBe` Page.defaultPageSize
 
     it "Finds all posts by author" $ do
-      let getByAuthor = getPosts (Just sndUser) Nothing Nothing
-      authoredPosts <- runMock getByAuthor givenPosts
+      let getByAuthor = getPosts (Just sndUser) Nothing Nothing Nothing Nothing
+      authoredPosts <- runMock (Page.content <$> getByAuthor) givenPosts
       length authoredPosts `shouldBe` 1
       authoredPosts `shouldSatisfy` all ((== sndUser) . Id . PostDto.authorId)
 

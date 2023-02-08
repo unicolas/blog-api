@@ -115,7 +115,6 @@ test-suite blog-api-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Constructors
       Controllers.AuthControllerSpec
       Controllers.CommentControllerSpec
       Controllers.PostControllerSpec
@@ -123,6 +122,7 @@ test-suite blog-api-test
       Mocks.PostStore
       Mocks.StorageMock
       Mocks.UserStore
+      Utils
       Paths_blog_api
   hs-source-dirs:
       test
