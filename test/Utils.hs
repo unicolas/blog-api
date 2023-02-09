@@ -13,6 +13,7 @@ module Utils
   , sortEntitiesBy
   , dropEntitiesBefore
   , emptyPage
+  , getUuid
   ) where
 
 import Data.List (sortBy)
@@ -78,3 +79,6 @@ dropEntitiesBefore maybeCursor = dropWhile $ maybe (const False) precedes maybeC
 
 emptyPage :: Page dto
 emptyPage = Page [] Nothing False defaultPageSize
+
+getUuid :: Id phantom -> UUID
+getUuid (Id uuid) = uuid
