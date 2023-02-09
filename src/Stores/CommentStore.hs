@@ -39,7 +39,7 @@ instance CommentStore App where
     pure $ listToMaybe comments
 
   findAll :: Sorting -> Maybe Cursor -> Int -> App [Entity Comment]
-  findAll sorting maybeCursor pageSize = do
+  findAll sorting maybeCursor count = do
     let
       sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
           \  FROM comments "
@@ -48,7 +48,7 @@ instance CommentStore App where
           \  FETCH FIRST ? ROWS ONLY"
       whereCursor = maybe mempty (\c -> "WHERE " <> cursorExpression c)
     pool <- asks (connectionPool . databaseContext)
-    liftIO $ withResource pool $ \conn -> query conn sql [pageSize + 1]
+    liftIO $ withResource pool $ \conn -> query conn sql [count]
 
   save :: Comment -> App (Maybe (Id Comment))
   save Comment{..} = do
@@ -68,7 +68,7 @@ instance CommentStore App where
     void $ liftIO $ withResource pool $ \conn -> execute conn sql [commentId]
 
   findByPost :: Id Post -> Sorting -> Maybe Cursor -> Int -> App [Entity Comment]
-  findByPost idPost sorting maybeCursor pageSize = do
+  findByPost idPost sorting maybeCursor count = do
     let
       sql = "SELECT id, title, content, created_at, updated_at, post_id, user_id \
           \  FROM comments \
@@ -77,4 +77,4 @@ instance CommentStore App where
           \  FETCH FIRST ? ROWS ONLY"
       andCursor = maybe mempty (\c -> "AND " <> cursorExpression c)
     pool <- asks (connectionPool . databaseContext)
-    liftIO $ withResource pool $ \conn -> query conn sql (idPost, pageSize + 1)
+    liftIO $ withResource pool $ \conn -> query conn sql (idPost, count)

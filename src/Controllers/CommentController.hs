@@ -52,7 +52,7 @@ getComments maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
     sorting = Sorting.make maybeSort maybeOrder
     pageSize = fromMaybe Page.defaultPageSize maybePageSize
   comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId
-    sorting maybeCursor pageSize
+    sorting maybeCursor (1 + pageSize)
   let nextCursor = Cursor.make sorting <$> (listToMaybe . reverse) comments
   pure $ Page.make (CommentDto.fromEntity <$> comments) nextCursor pageSize
 

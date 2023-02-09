@@ -39,7 +39,7 @@ instance PostStore App where
     pure $ listToMaybe posts
 
   findAll :: Sorting -> Maybe Cursor -> Int -> App [Entity Post]
-  findAll sorting maybeCursor pageSize = do
+  findAll sorting maybeCursor count = do
     let
       sql = "SELECT id, title, content, user_id, created_at, updated_at \
           \  FROM posts "
@@ -48,7 +48,7 @@ instance PostStore App where
           \  FETCH FIRST ? ROWS ONLY"
       whereCursor = maybe mempty (\c -> "WHERE " <> cursorExpression c)
     pool <- asks $ connectionPool . databaseContext
-    liftIO $ withResource pool $ \conn -> query conn sql [pageSize + 1]
+    liftIO $ withResource pool $ \conn -> query conn sql [count]
 
   save :: Post -> App (Maybe (Id Post))
   save Post{..} = do
@@ -67,7 +67,7 @@ instance PostStore App where
     void $ liftIO $ withResource pool $ \conn -> execute conn sql [idPost]
 
   findByAuthor :: Id User -> Sorting -> Maybe Cursor -> Int -> App [Entity Post]
-  findByAuthor idAuthor sorting maybeCursor pageSize = do
+  findByAuthor idAuthor sorting maybeCursor count = do
     let
       sql = "SELECT id, title, content, user_id, created_at, updated_at \
           \  FROM posts \
@@ -76,4 +76,4 @@ instance PostStore App where
           \  FETCH FIRST ? ROWS ONLY"
       andCursor = maybe mempty (\c -> "AND " <> cursorExpression c)
     pool <- asks $ connectionPool . databaseContext
-    liftIO $ withResource pool $ \conn -> query conn sql (idAuthor, pageSize + 1)
+    liftIO $ withResource pool $ \conn -> query conn sql (idAuthor, count)

@@ -49,7 +49,7 @@ getPosts maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
     sorting = Sorting.make maybeSort maybeOrder
     pageSize = fromMaybe defaultPageSize maybePageSize
   posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId
-    sorting maybeCursor pageSize
+    sorting maybeCursor (1 + pageSize)
   let nextCursor = Cursor.make sorting <$> (listToMaybe . reverse) posts
   pure $ Page.make (PostDto.fromEntity <$> posts) nextCursor pageSize
 
