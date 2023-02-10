@@ -5,8 +5,10 @@ module Controllers.CommentControllerSpec (spec) where
 
 import Controllers.CommentController
   (createComment, deleteComment, getComment, getComments)
-import Data.Function ((&))
+import Data.Either (fromRight)
+import Data.Functor ((<&>))
 import qualified Data.Map.Strict as Map
+import Data.Maybe (fromJust)
 import Data.UUID (nil)
 import qualified Dto.CommentDto as CommentDto
 import Dto.NewCommentDto (NewCommentDto(..))
@@ -20,6 +22,7 @@ import Models.Comment (Comment(..))
 import qualified Models.Comment as Comment
 import Models.Post (Post(Post))
 import qualified Models.Post as Post
+import qualified Models.Types.Cursor as Cursor
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
 import qualified Models.Types.Sorting as Order (Order(Asc, Desc))
@@ -31,11 +34,12 @@ import Test.Hspec
   , describe
   , it
   , shouldBe
+  , shouldNotBe
   , shouldReturn
   , shouldSatisfy
   , shouldThrow
   )
-import Utils (emptyPage, makeId, makeUtc, serverError)
+import Utils (emptyPage, getUuid, makeId, makeUtc, serverError)
 
 spec :: Spec
 spec = do
@@ -63,34 +67,54 @@ spec = do
       , (sndId, Entity sndId sndPost)
       ]
     idUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
+    anyUser = Nothing
+    defaultSort = Nothing
+    defaultOrder = Nothing
+    defaultPageSize = Nothing
+    fromFirst = Nothing
+    sortTitle = Just Sort.Title
+    sortCreated = Just Sort.CreatedAt
+    orderAsc = Just Order.Asc
+    orderDesc = Just Order.Desc
   let ?requestCtx = RequestContext {RequestContext.userId = idUser}
 
   describe "Given a blog with no comments" $ do
     let noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
 
     it "Does not find a single comment" $ do
-      let get = getComments Nothing Nothing Nothing Nothing Nothing
-      runMock get noComments `shouldReturn` emptyPage
+      let
+        getAll = getComments
+          anyUser
+          defaultSort
+          defaultOrder
+          fromFirst
+          defaultPageSize
+      runMock getAll noComments `shouldReturn` emptyPage
 
     context "When creating a comment" $ do
       let
         newComment = NewCommentDto
           { NewCommentDto.title = "Title"
           , NewCommentDto.content = "Content"
-          , NewCommentDto.postId = fstId & \(Id uuid) -> uuid
+          , NewCommentDto.postId = getUuid fstId
           }
 
       it "Creates the first comment" $ do
         let
-          createThenGet = createComment newComment
-            *> getComments Nothing Nothing Nothing Nothing Nothing
+          getAll = getComments
+            anyUser
+            defaultSort
+            defaultOrder
+            fromFirst
+            defaultPageSize
+          createThenGet = createComment newComment *> getAll
         runMock (length . Page.content <$> createThenGet) noComments `shouldReturn` 1
 
       it "Finds the comment" $ do
         comment <- runMock (createComment newComment >>= getComment) noComments
         CommentDto.title comment `shouldBe` NewCommentDto.title newComment
         CommentDto.content comment `shouldBe` NewCommentDto.content newComment
-        CommentDto.authorId comment `shouldBe` (idUser & \(Id uuid) -> uuid)
+        CommentDto.authorId comment `shouldBe` getUuid idUser
 
       it "Throws error if commented post does not exist" $ do
         let newComment' = newComment{NewCommentDto.postId = nil}
@@ -118,9 +142,19 @@ spec = do
         , Comment.createdAt = makeUtc "2022-09-17 00:00"
         , Comment.updatedAt = makeUtc "2022-09-17 00:00"
         }
+      thirdCommentId = makeId "b17e8ffa-f8ca-4169-8338-6bfb3a16c24c"
+      thirdComment = Comment
+        { Comment.title = "Comment 3"
+        , Comment.content = "Comment content 3"
+        , Comment.userId = fstCommentUser
+        , Comment.postId = sndId
+        , Comment.createdAt = makeUtc "2022-09-10 00:00"
+        , Comment.updatedAt = makeUtc "2022-09-10 00:00"
+        }
       comments = Map.fromList
         [ (fstCommentId, Entity fstCommentId fstComment)
         , (sndCommentId, Entity sndCommentId sndComment)
+        , (thirdCommentId, Entity thirdCommentId thirdComment)
         ]
       givenComments = StorageMock.emptyStorage
         { StorageMock.posts = posts
@@ -128,13 +162,19 @@ spec = do
         }
 
     it "Finds all comments" $ do
-      let get = getComments Nothing Nothing Nothing Nothing Nothing
-      runMock (length. Page.content <$> get) givenComments `shouldReturn` 2
+      let
+        getAll = getComments
+          anyUser
+          defaultSort
+          defaultOrder
+          fromFirst
+          defaultPageSize
+      runMock (length. Page.content <$> getAll) givenComments `shouldReturn` 3
 
     it "Finds all comments sorted by title descending" $ do
       let
-        get = getComments Nothing (Just Sort.Title) (Just Order.Desc) Nothing Nothing
-        expectedTitles = [Comment.title sndComment, Comment.title fstComment]
+        get = getComments anyUser sortTitle orderDesc fromFirst defaultPageSize
+        expectedTitles = Comment.title <$> [thirdComment, sndComment, fstComment]
       page <- runMock get givenComments
       CommentDto.title <$> Page.content page `shouldBe` expectedTitles
       Page.hasNextPage page `shouldBe` False
@@ -143,11 +183,8 @@ spec = do
 
     it "Finds all posts sorted by created-at ascending" $ do
       let
-        get = getComments Nothing (Just Sort.CreatedAt) (Just Order.Asc) Nothing Nothing
-        expectedDates =
-          [ Comment.createdAt fstComment
-          , Comment.createdAt sndComment
-          ]
+        get = getComments anyUser sortCreated orderAsc fromFirst defaultPageSize
+        expectedDates = Comment.createdAt <$> [thirdComment, fstComment, sndComment]
       page <- runMock get givenComments
       CommentDto.createdAt <$> Page.content page `shouldBe` expectedDates
       Page.hasNextPage page `shouldBe` False
@@ -155,10 +192,42 @@ spec = do
       Page.pageSize page `shouldBe` Page.defaultPageSize
 
     it "Finds all comments by post" $ do
-      let getBy = getComments (Just sndId) Nothing Nothing Nothing Nothing
+      let
+        getBy = getComments
+          (Just sndId)
+          defaultSort
+          defaultOrder
+          fromFirst
+          defaultPageSize
       commentsInPost <- runMock (Page.content <$> getBy) givenComments
-      length commentsInPost `shouldBe` 1
+      length commentsInPost `shouldBe` 2
       commentsInPost `shouldSatisfy` all ((== sndId) . Id . CommentDto.postId)
+
+    context "When paging by 2" $ do
+      let getAll = getComments anyUser sortCreated orderDesc fromFirst (Just 2)
+
+      it "Finds first 2 comments sorted by created-at descending" $ do
+        let expectedTitles = Comment.title <$> [sndComment, fstComment]
+        page <- runMock getAll givenComments
+        CommentDto.title <$> Page.content page `shouldBe` expectedTitles
+        Page.hasNextPage page `shouldBe` True
+        Page.nextCursor page `shouldNotBe` Nothing
+        Page.pageSize page `shouldBe` 2
+
+      it "Finds left comment on next page" $ do
+        cursor <- runMock getAll givenComments <&> Just
+          . fromRight undefined
+          . Cursor.decode
+          . fromJust
+          . Page.nextCursor
+        let
+          getNext = getComments anyUser sortCreated orderDesc cursor (Just 2)
+          expectedTitles = [Comment.title thirdComment]
+        page <- runMock getNext givenComments
+        CommentDto.title <$> Page.content page `shouldBe` expectedTitles
+        Page.hasNextPage page `shouldBe` False
+        Page.nextCursor page `shouldBe` Nothing
+        Page.pageSize page `shouldBe` 2
 
     context "When finding by id" $ do
       it "Throws error if not found" $ do
