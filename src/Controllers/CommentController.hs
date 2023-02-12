@@ -16,14 +16,18 @@ import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
-import Data.Maybe (isNothing)
+import Data.Maybe (fromMaybe, isNothing, listToMaybe)
 import Data.Time (getCurrentTime)
 import Dto.CommentDto (CommentDto)
 import qualified Dto.CommentDto as CommentDto
 import Dto.NewCommentDto (NewCommentDto(..))
 import qualified Dto.NewCommentDto as NewCommentDto
+import Dto.Page (Page)
+import qualified Dto.Page as Page
 import Models.Comment (Comment(..))
 import Models.Post (Post)
+import Models.Types.Cursor (Cursor)
+import qualified Models.Types.Cursor as Cursor
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
 import Models.Types.Sorting (Order, Sort)
@@ -37,11 +41,20 @@ import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
 
 getComments :: (CommentStore m)
-  => Maybe (Id Post) -> Maybe Sort -> Maybe Order -> m [CommentDto]
-getComments maybeId maybeSort maybeOrder = do
-  let sorting = Sorting.make maybeSort maybeOrder
-  comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId sorting
-  pure $ CommentDto.fromEntity <$> comments
+  => Maybe (Id Post)
+  -> Maybe Sort
+  -> Maybe Order
+  -> Maybe Cursor
+  -> Maybe Int
+  -> m (Page CommentDto)
+getComments maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
+  let
+    sorting = Sorting.make maybeSort maybeOrder
+    pageSize = fromMaybe Page.defaultPageSize maybePageSize
+  comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId
+    sorting maybeCursor (1 + pageSize)
+  let nextCursor = Cursor.make sorting <$> (listToMaybe . reverse) comments
+  pure $ Page.make (CommentDto.fromEntity <$> comments) nextCursor pageSize
 
 getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
 getComment commentId = do

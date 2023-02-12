@@ -15,15 +15,20 @@ import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Time (getCurrentTime)
 import Dto.NewPostDto (NewPostDto)
 import qualified Dto.NewPostDto as NewPostDto
+import Dto.Page (Page(..), defaultPageSize)
+import qualified Dto.Page as Page
 import Dto.PostDto (PostDto)
 import qualified Dto.PostDto as PostDto
 import Models.Post (Post(..))
+import Models.Types.Cursor (Cursor(..))
+import qualified Models.Types.Cursor as Cursor
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id)
-import Models.Types.Sorting (Order, Sort)
+import Models.Types.Sorting (Order, Sort(..))
 import qualified Models.Types.Sorting as Sorting
 import Models.User (User)
 import qualified RequestContext
@@ -32,12 +37,21 @@ import qualified Servant as Http (NoContent(..))
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
 
-getPosts :: (PostStore m)
-  => Maybe (Id User) -> Maybe Sort -> Maybe Order -> m [PostDto]
-getPosts maybeId maybeSort maybeOrder = do
-  let sorting = Sorting.make maybeSort maybeOrder
-  posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId sorting
-  pure (PostDto.fromEntity <$> posts)
+getPosts :: PostStore m
+  => Maybe (Id User)
+  -> Maybe Sort
+  -> Maybe Order
+  -> Maybe Cursor
+  -> Maybe Int
+  -> m (Page PostDto)
+getPosts maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
+  let
+    sorting = Sorting.make maybeSort maybeOrder
+    pageSize = fromMaybe defaultPageSize maybePageSize
+  posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId
+    sorting maybeCursor (1 + pageSize)
+  let nextCursor = Cursor.make sorting <$> (listToMaybe . reverse) posts
+  pure $ Page.make (PostDto.fromEntity <$> posts) nextCursor pageSize
 
 getPost :: (MonadThrow m, PostStore m) => Id Post -> m PostDto
 getPost postId = do

@@ -15,6 +15,7 @@ type Sorting = (Sort, Order)
 
 data Sort = CreatedAt | UpdatedAt | Title
 data Order = Asc | Desc
+  deriving (Show, Read)
 
 instance Servant.FromHttpApiData Sort where
   parseQueryParam :: Text -> Either Text Sort
@@ -35,12 +36,12 @@ make :: Maybe Sort -> Maybe Order -> Sorting
 make = curry (fromMaybe CreatedAt *** fromMaybe Desc)
 
 sortExpression :: Sorting -> Query
-sortExpression (sort, order) = sortField sort <> " " <> orderOption order
-  where
-    sortField = \case
-      CreatedAt -> "created_at"
-      UpdatedAt -> "updated_at"
-      Title -> "title"
-    orderOption = \case
-      Asc -> "asc"
-      Desc -> "desc"
+sortExpression (sort, order) = mconcat
+  [ case sort of
+      CreatedAt -> "created_at "
+      UpdatedAt -> "updated_at "
+      Title -> "title "
+  , case order of
+      Asc -> "asc, id"
+      Desc -> "desc, id"
+  ]
