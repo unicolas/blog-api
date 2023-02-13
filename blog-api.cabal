@@ -51,6 +51,7 @@ library
       SasOrphans
       Stores.CommentStore
       Stores.PostStore
+      Stores.Query
       Stores.UserStore
   other-modules:
       Paths_blog_api
