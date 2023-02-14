@@ -12,11 +12,9 @@ import qualified Controllers.AuthController as AuthController
 import qualified Controllers.CommentController as CommentController
 import qualified Controllers.PostController as PostController
 import qualified Controllers.Types.Error as Error
-import Dto.CommentDto (CommentDto)
-import Dto.NewCommentDto (NewCommentDto)
-import Dto.NewPostDto (NewPostDto)
+import Dto.CommentDto (CommentDto, CommentIdDto, NewCommentDto)
 import Dto.Page (Page)
-import Dto.PostDto (PostDto)
+import Dto.PostDto (NewPostDto, PostDto, PostIdDto)
 import GHC.Generics (Generic)
 import Models.Comment (Comment)
 import Models.Post (Post)
@@ -92,7 +90,7 @@ data PostRoutes mode = PostRoutes
   , createPost :: mode
       -- POST /posts
       :- ReqBody '[JSON] NewPostDto
-      :> Http.Post '[JSON] (Id Post)
+      :> Http.Post '[JSON] PostIdDto
   , deletePost :: mode
       -- DELETE /posts/:postId
       :- Capture "postId" (Id Post)
@@ -125,7 +123,7 @@ data CommentRoutes mode = CommentRoutes
   , createComment :: mode
       -- POST /comments
       :- ReqBody '[JSON] NewCommentDto
-      :> Http.Post '[JSON] (Id Comment)
+      :> Http.Post '[JSON] CommentIdDto
   , deleteComment :: mode
       -- DELETE /comments/:postId
       :- Capture "commentId" (Id Comment)

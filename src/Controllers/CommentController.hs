@@ -18,10 +18,8 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
 import Data.Maybe (fromMaybe, isNothing, listToMaybe)
 import Data.Time (getCurrentTime)
-import Dto.CommentDto (CommentDto)
+import Dto.CommentDto (CommentDto, CommentIdDto(..), NewCommentDto(..))
 import qualified Dto.CommentDto as CommentDto
-import Dto.NewCommentDto (NewCommentDto(..))
-import qualified Dto.NewCommentDto as NewCommentDto
 import Dto.Page (Page)
 import qualified Dto.Page as Page
 import Models.Comment (Comment(..))
@@ -66,7 +64,7 @@ getComment commentId = do
 
 createComment :: (?requestCtx :: RequestContext)
   => (MonadThrow m, CommentStore m, PostStore m, MonadIO m)
-  => NewCommentDto -> m (Id Comment)
+  => NewCommentDto -> m CommentIdDto
 createComment dto@NewCommentDto{..} = do
   maybePost <- PostStore.find (Id postId)
   when (isNothing maybePost)
@@ -74,9 +72,9 @@ createComment dto@NewCommentDto{..} = do
   now <- liftIO getCurrentTime
   let
     userId = RequestContext.userId ?requestCtx
-    comment = NewCommentDto.toComment dto userId now now
+    comment = CommentDto.toComment dto userId now now
   CommentStore.save comment >>= \case
-    Just commentId -> pure commentId
+    Just (Id commentId) -> pure CommentIdDto {..}
     Nothing -> throwM (Error.serverError "Failed to create comment.")
 
 deleteComment :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)
