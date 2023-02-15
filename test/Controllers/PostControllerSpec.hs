@@ -9,10 +9,11 @@ import Data.Functor ((<&>))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
 import Data.UUID (nil)
-import Dto.NewPostDto (NewPostDto(NewPostDto))
-import qualified Dto.NewPostDto as NewPostDto
 import qualified Dto.Page as Page
-import qualified Dto.PostDto as PostDto
+import Dto.PostDto (NewPostDto(NewPostDto))
+import qualified Dto.PostDto as NewPostDto (NewPostDto(..))
+import qualified Dto.PostDto as PostDto (PostDto(..))
+import qualified Dto.PostDto as PostIdDto (toPostId)
 import Mocks.PostStore ()
 import Mocks.StorageMock (runMock)
 import qualified Mocks.StorageMock as StorageMock
@@ -84,7 +85,9 @@ spec = do
         runMock (length . Page.content <$> createThenGet) noPosts `shouldReturn` 1
 
       it "Finds the post" $ do
-        post <- runMock (createPost newPost >>= getPost) noPosts
+        post <- runMock
+          (createPost newPost >>= getPost . PostIdDto.toPostId)
+          noPosts
         PostDto.title post `shouldBe` NewPostDto.title newPost
         PostDto.content post `shouldBe` NewPostDto.content newPost
         PostDto.authorId post `shouldBe` getUuid idUser

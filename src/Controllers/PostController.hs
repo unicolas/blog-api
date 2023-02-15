@@ -17,17 +17,15 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Time (getCurrentTime)
-import Dto.NewPostDto (NewPostDto)
-import qualified Dto.NewPostDto as NewPostDto
 import Dto.Page (Page(..), defaultPageSize)
 import qualified Dto.Page as Page
-import Dto.PostDto (PostDto)
+import Dto.PostDto (NewPostDto, PostDto, PostIdDto(..))
 import qualified Dto.PostDto as PostDto
 import Models.Post (Post(..))
 import Models.Types.Cursor (Cursor(..))
 import qualified Models.Types.Cursor as Cursor
 import Models.Types.Entity (Entity(..))
-import Models.Types.Id (Id)
+import Models.Types.Id (Id(..))
 import Models.Types.Sorting (Order, Sort(..))
 import qualified Models.Types.Sorting as Sorting
 import Models.User (User)
@@ -62,12 +60,12 @@ getPost postId = do
     Nothing -> throwM (Error.notFound "Could not find post with such ID.")
 
 createPost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m, MonadIO m)
-  => NewPostDto -> m (Id Post)
+  => NewPostDto -> m PostIdDto
 createPost dto = do
   now <- liftIO getCurrentTime
-  let post = NewPostDto.toPost dto (RequestContext.userId ?requestCtx) now now
+  let post = PostDto.toPost dto (RequestContext.userId ?requestCtx) now now
   PostStore.save post >>= \case
-    Just postId -> pure postId
+    Just (Id postId) -> pure PostIdDto {postId}
     Nothing -> throwM (Error.serverError "Failed to create post.")
 
 deletePost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)

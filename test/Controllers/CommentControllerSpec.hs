@@ -10,9 +10,10 @@ import Data.Functor ((<&>))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
 import Data.UUID (nil)
-import qualified Dto.CommentDto as CommentDto
-import Dto.NewCommentDto (NewCommentDto(..))
-import qualified Dto.NewCommentDto as NewCommentDto
+import Dto.CommentDto (NewCommentDto(NewCommentDto))
+import qualified Dto.CommentDto as CommentDto (CommentDto(..))
+import qualified Dto.CommentDto as CommentIdDto (toCommentId)
+import qualified Dto.CommentDto as NewCommentDto (NewCommentDto(..))
 import qualified Dto.Page as Page
 import Mocks.CommentStore ()
 import Mocks.PostStore ()
@@ -111,7 +112,9 @@ spec = do
         runMock (length . Page.content <$> createThenGet) noComments `shouldReturn` 1
 
       it "Finds the comment" $ do
-        comment <- runMock (createComment newComment >>= getComment) noComments
+        comment <- runMock
+          (createComment newComment >>= getComment . CommentIdDto.toCommentId)
+          noComments
         CommentDto.title comment `shouldBe` NewCommentDto.title newComment
         CommentDto.content comment `shouldBe` NewCommentDto.content newComment
         CommentDto.authorId comment `shouldBe` getUuid idUser
