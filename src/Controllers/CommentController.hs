@@ -74,7 +74,7 @@ createComment dto@NewCommentDto{..} = do
     userId = RequestContext.userId ?requestCtx
     comment = CommentDto.toComment dto userId now now
   CommentStore.save comment >>= \case
-    Just (Id commentId) -> pure CommentIdDto {..}
+    Just (Id commentId) -> pure CommentIdDto {commentId}
     Nothing -> throwM (Error.serverError "Failed to create comment.")
 
 deleteComment :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)

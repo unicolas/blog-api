@@ -3,7 +3,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Controllers.PostController
   ( getPosts
@@ -66,7 +65,7 @@ createPost dto = do
   now <- liftIO getCurrentTime
   let post = PostDto.toPost dto (RequestContext.userId ?requestCtx) now now
   PostStore.save post >>= \case
-    Just (Id postId) -> pure PostIdDto {..}
+    Just (Id postId) -> pure PostIdDto {postId}
     Nothing -> throwM (Error.serverError "Failed to create post.")
 
 deletePost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)
