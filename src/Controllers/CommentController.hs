@@ -10,13 +10,15 @@ module Controllers.CommentController
   , getComment
   , createComment
   , deleteComment
+  , getPostComments
+  , getCommentComments
   ) where
 
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
-import Data.Maybe (fromMaybe, isNothing, listToMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Time (getCurrentTime)
 import Dto.CommentDto (CommentDto, CommentIdDto(..), NewCommentDto(..))
 import qualified Dto.CommentDto as CommentDto
@@ -28,7 +30,7 @@ import Models.Types.Cursor (Cursor)
 import qualified Models.Types.Cursor as Cursor
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
-import Models.Types.Sorting (Order, Sort)
+import Models.Types.Sorting (Order, Sort, Sorting)
 import qualified Models.Types.Sorting as Sorting
 import qualified RequestContext
 import RequestContext (RequestContext)
@@ -51,8 +53,10 @@ getComments maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
     pageSize = fromMaybe Page.defaultPageSize maybePageSize
   comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId
     sorting maybeCursor (1 + pageSize)
-  let nextCursor = Cursor.make sorting <$> (listToMaybe . reverse) comments
-  pure $ Page.make (CommentDto.fromEntity <$> comments) nextCursor pageSize
+  pure $ Page.make
+    (CommentDto.fromEntity <$> comments)
+    (Cursor.fromList sorting comments)
+    pageSize
 
 getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
 getComment commentId = do
@@ -85,3 +89,39 @@ deleteComment commentId = CommentStore.find commentId >>= \case
     when (userId /= RequestContext.userId ?requestCtx) $ throwM Error.forbidden
     CommentStore.delete commentId
     pure Http.NoContent
+
+getPostComments :: (CommentStore m)
+  => Id Post
+  -> Maybe Sort
+  -> Maybe Order
+  -> Maybe Cursor
+  -> Maybe Int
+  -> m (Page CommentDto)
+getPostComments = getCommentsBy CommentStore.findByPost
+
+getCommentComments :: (CommentStore m)
+  => Id Comment
+  -> Maybe Sort
+  -> Maybe Order
+  -> Maybe Cursor
+  -> Maybe Int
+  -> m (Page CommentDto)
+getCommentComments = getCommentsBy CommentStore.findByComment
+
+getCommentsBy :: CommentStore m
+  => (Id model -> Sorting -> Maybe Cursor -> Int -> m [Entity Comment])
+  -> Id model
+  -> Maybe Sort
+  -> Maybe Order
+  -> Maybe Cursor
+  -> Maybe Int
+  -> m (Page CommentDto)
+getCommentsBy find modelId maybeSort maybeOrder maybeCursor maybePageSize = do
+  let
+    sorting = Sorting.make maybeSort maybeOrder
+    pageSize = fromMaybe Page.defaultPageSize maybePageSize
+  comments <- find modelId sorting maybeCursor (1 + pageSize)
+  pure $ Page.make
+    (CommentDto.fromEntity <$> comments)
+    (Cursor.fromList sorting comments)
+    pageSize

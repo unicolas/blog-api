@@ -98,6 +98,7 @@ spec = do
           { NewCommentDto.title = "Title"
           , NewCommentDto.content = "Content"
           , NewCommentDto.postId = getUuid fstId
+          , NewCommentDto.parentId = Nothing
           }
 
       it "Creates the first comment" $ do
@@ -118,6 +119,7 @@ spec = do
         CommentDto.title comment `shouldBe` NewCommentDto.title newComment
         CommentDto.content comment `shouldBe` NewCommentDto.content newComment
         CommentDto.authorId comment `shouldBe` getUuid idUser
+        CommentDto.parentId comment `shouldBe` NewCommentDto.parentId newComment
 
       it "Throws error if commented post does not exist" $ do
         let newComment' = newComment{NewCommentDto.postId = nil}
@@ -134,6 +136,7 @@ spec = do
         , Comment.postId = fstId
         , Comment.createdAt = makeUtc "2022-09-12 00:00"
         , Comment.updatedAt = makeUtc "2022-09-12 00:00"
+        , Comment.parentId = Nothing
         }
       sndCommentId = makeId "e1da0ad5-d7fb-4c80-bb53-999d6e7c6147"
       sndCommentUser = makeId "0a6c8791-ab24-4b87-8289-411582c3bab7"
@@ -144,6 +147,7 @@ spec = do
         , Comment.postId = sndId
         , Comment.createdAt = makeUtc "2022-09-17 00:00"
         , Comment.updatedAt = makeUtc "2022-09-17 00:00"
+        , Comment.parentId = Nothing
         }
       thirdCommentId = makeId "b17e8ffa-f8ca-4169-8338-6bfb3a16c24c"
       thirdComment = Comment
@@ -153,6 +157,7 @@ spec = do
         , Comment.postId = sndId
         , Comment.createdAt = makeUtc "2022-09-10 00:00"
         , Comment.updatedAt = makeUtc "2022-09-10 00:00"
+        , Comment.parentId = Nothing
         }
       comments = Map.fromList
         [ (fstCommentId, Entity fstCommentId fstComment)

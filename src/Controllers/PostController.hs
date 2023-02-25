@@ -15,7 +15,7 @@ import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Time (getCurrentTime)
 import Dto.Page (Page(..), defaultPageSize)
 import qualified Dto.Page as Page
@@ -48,8 +48,10 @@ getPosts maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
     pageSize = fromMaybe defaultPageSize maybePageSize
   posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId
     sorting maybeCursor (1 + pageSize)
-  let nextCursor = Cursor.make sorting <$> (listToMaybe . reverse) posts
-  pure $ Page.make (PostDto.fromEntity <$> posts) nextCursor pageSize
+  pure $ Page.make
+    (PostDto.fromEntity <$> posts)
+    (Cursor.fromList sorting posts)
+    pageSize
 
 getPost :: (MonadThrow m, PostStore m) => Id Post -> m PostDto
 getPost postId = do

@@ -8,8 +8,9 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Models.Types.Cursor
- (Cursor(..), decode, encode, cursorExpression, make) where
+ (Cursor(..), decode, encode, cursorExpression, make, fromList) where
 
+import Data.Maybe (listToMaybe)
 import Data.String (IsString(..))
 import Data.Text (Text, pack, unpack)
 import Data.Text.Encoding.Base64 (decodeBase64, encodeBase64)
@@ -66,3 +67,10 @@ cursorExpression = \case
           Desc -> " <= "
       , "(", quote value, ", ", quote id', ")"
       ]
+
+fromList ::
+  ( HasField "createdAt" model UTCTime
+  , HasField "title" model Text
+  , HasField "updatedAt" model UTCTime
+  ) => Sorting -> [Entity model] -> Maybe Cursor
+fromList sorting entities = make sorting <$> (listToMaybe . reverse) entities

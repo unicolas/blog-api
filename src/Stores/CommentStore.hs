@@ -29,13 +29,14 @@ class Monad m => CommentStore m where
   save :: Comment -> m (Maybe (Id Comment))
   delete :: Id Comment -> m ()
   findByPost :: Id Post -> Sorting -> Maybe Cursor -> Int -> m [Entity Comment]
+  findByComment :: Id Comment -> Sorting -> Maybe Cursor -> Int -> m [Entity Comment]
 
 instance CommentStore App where
   find :: Id Comment -> App (Maybe (Entity Comment))
   find idComment = do
     pool <- asks (connectionPool . databaseContext)
     comments <- Query.fetch
-        [ "SELECT id, title, content, created_at, updated_at, post_id, user_id"
+        [ "SELECT id, title, content, created_at, updated_at, post_id, user_id, parent_comment_id"
         , "FROM comments"
         , "WHERE id = ?"
         ] [idComment]
@@ -47,7 +48,7 @@ instance CommentStore App where
   findAll sorting maybeCursor count = do
     pool <- asks (connectionPool . databaseContext)
     Query.fetch
-        [ "SELECT id, title, content, created_at, updated_at, post_id, user_id"
+        [ "SELECT id, title, content, created_at, updated_at, post_id, user_id, parent_comment_id"
         , "FROM comments"
         , maybe mempty (("WHERE " <>) . cursorExpression) maybeCursor
         , "ORDER BY",  sortExpression sorting
@@ -61,10 +62,10 @@ instance CommentStore App where
     pool <- asks (connectionPool . databaseContext)
     ids <- Query.fetch
         [ "INSERT INTO comments"
-        , "(id, title, content, created_at, updated_at, post_id, user_id)"
-        , "VALUES (gen_random_uuid(), ?, ?, ?, ?, ?, ?)"
+        , "(id, title, content, created_at, updated_at, post_id, user_id, parent_comment_id)"
+        , "VALUES (gen_random_uuid(), ?, ?, ?, ?, ?, ?, ?)"
         , "RETURNING id"
-        ] (title, content, createdAt, updatedAt, postId, userId)
+        ] (title, content, createdAt, updatedAt, postId, userId, parentId)
       & withResource pool
       & liftIO
     pure (fromOnly <$> listToMaybe ids)
@@ -81,12 +82,27 @@ instance CommentStore App where
   findByPost idPost sorting maybeCursor count = do
     pool <- asks (connectionPool . databaseContext)
     Query.fetch
-        [ "SELECT id, title, content, created_at, updated_at, post_id, user_id"
+        [ "SELECT id, title, content, created_at, updated_at, post_id, user_id, parent_comment_id"
         , "FROM comments"
         , "WHERE post_id = ?"
         , maybe mempty (("AND " <>) . cursorExpression) maybeCursor
+        , "AND parent_comment_id IS NULL"
         , "ORDER BY", sortExpression sorting
         , "FETCH FIRST ? ROWS ONLY"
         ] (idPost, count)
+      & withResource pool
+      & liftIO
+
+  findByComment :: Id Comment -> Sorting -> Maybe Cursor -> Int -> App [Entity Comment]
+  findByComment idComment sorting maybeCursor count = do
+    pool <- asks (connectionPool . databaseContext)
+    Query.fetch
+        [ "SELECT id, title, content, created_at, updated_at, post_id, user_id, parent_comment_id"
+        , "FROM comments"
+        , "WHERE parent_comment_id = ?"
+        , maybe mempty (("AND " <>) . cursorExpression) maybeCursor
+        , "ORDER BY", sortExpression sorting
+        , "FETCH FIRST ? ROWS ONLY"
+        ] (idComment, count)
       & withResource pool
       & liftIO

@@ -18,5 +18,6 @@ data Comment = Comment
   , updatedAt :: !UTCTime
   , postId :: !(Id Post)
   , userId :: !(Id User)
+  , parentId :: !(Maybe (Id Comment))
   }
   deriving (Show, Eq, Generic, FromRow, ToRow)
