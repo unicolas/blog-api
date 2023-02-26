@@ -11,7 +11,7 @@ module Controllers.CommentController
   , createComment
   , deleteComment
   , getPostComments
-  , getCommentComments
+  , getCommentReplies
   ) where
 
 import Control.Monad (when)
@@ -99,14 +99,14 @@ getPostComments :: (CommentStore m)
   -> m (Page CommentDto)
 getPostComments = getCommentsBy CommentStore.findByPost
 
-getCommentComments :: (CommentStore m)
+getCommentReplies :: (CommentStore m)
   => Id Comment
   -> Maybe Sort
   -> Maybe Order
   -> Maybe Cursor
   -> Maybe Int
   -> m (Page CommentDto)
-getCommentComments = getCommentsBy CommentStore.findByComment
+getCommentReplies = getCommentsBy CommentStore.findByComment
 
 getCommentsBy :: CommentStore m
   => (Id model -> Sorting -> Maybe Cursor -> Int -> m [Entity Comment])

@@ -138,7 +138,7 @@ data CommentRoutes mode = CommentRoutes
       -- DELETE /comments/:commentId
       :- Capture "commentId" (Id Comment)
       :> Http.Delete '[JSON] Http.NoContent
-  , getCommentComments :: mode
+  , getCommentReplies :: mode
       -- GET /comments/:commentId/comments
       :- Capture "commentId" (Id Comment)
       :> "comments"
@@ -157,5 +157,5 @@ commentHandlers = CommentRoutes
   , getComment = CommentController.getComment
   , createComment = CommentController.createComment
   , deleteComment = CommentController.deleteComment
-  , getCommentComments = CommentController.getCommentComments
+  , getCommentReplies = CommentController.getCommentReplies
   }
