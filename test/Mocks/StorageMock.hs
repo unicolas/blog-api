@@ -1,4 +1,10 @@
-module Mocks.StorageMock (runMock, StorageMock, Storage(..), emptyStorage) where
+module Mocks.StorageMock
+  ( runMock
+  , StorageMock
+  , Storage(..)
+  , emptyStorage
+  , storeFromList
+  ) where
 
 import Control.Monad.State (StateT, runStateT)
 import qualified Data.Map as Map
@@ -6,7 +12,7 @@ import Data.Map.Strict (Map)
 import Models.Comment (Comment)
 import Models.Credentials (Credentials)
 import Models.Post (Post)
-import Models.Types.Entity (Entity)
+import Models.Types.Entity (Entity(Entity))
 import Models.Types.Id (Id)
 import Models.User (User)
 
@@ -29,3 +35,6 @@ emptyStorage = MakeStorage
   , posts = Map.empty
   , comments = Map.empty
   }
+
+storeFromList :: [(Id model, model)] -> Map (Id model) (Entity model)
+storeFromList = Map.fromList . fmap (\(i, m) -> (i, Entity i m))

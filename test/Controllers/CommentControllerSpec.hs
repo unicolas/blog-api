@@ -4,10 +4,9 @@
 module Controllers.CommentControllerSpec (spec) where
 
 import Controllers.CommentController
-  (createComment, deleteComment, getComment, getComments)
+  (createComment, deleteComment, getComment, getCommentReplies, getPostComments)
 import Data.Either (fromRight)
 import Data.Functor ((<&>))
-import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
 import Data.UUID (nil)
 import Dto.CommentDto (NewCommentDto(NewCommentDto))
@@ -24,7 +23,6 @@ import qualified Models.Comment as Comment
 import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import qualified Models.Types.Cursor as Cursor
-import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
 import qualified Models.Types.Sorting as Order (Order(Asc, Desc))
 import qualified Models.Types.Sorting as Sort (Sort(CreatedAt, Title))
@@ -63,12 +61,8 @@ spec = do
       , Post.createdAt = makeUtc "2022-09-17 00:00"
       , Post.updatedAt = makeUtc "2022-09-17 00:00"
       }
-    posts = Map.fromList
-      [ (fstId, Entity fstId fstPost)
-      , (sndId, Entity sndId sndPost)
-      ]
+    posts = StorageMock.storeFromList [(fstId, fstPost), (sndId, sndPost)]
     idUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
-    anyUser = Nothing
     defaultSort = Nothing
     defaultOrder = Nothing
     defaultPageSize = Nothing
@@ -79,13 +73,13 @@ spec = do
     orderDesc = Just Order.Desc
   let ?requestCtx = RequestContext {RequestContext.userId = idUser}
 
-  describe "Given a blog with no comments" $ do
+  describe "Given a blog with posts and no comments" $ do
     let noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
 
-    it "Does not find a single comment" $ do
+    it "Does not find post comments" $ do
       let
-        getAll = getComments
-          anyUser
+        getAll = getPostComments
+          fstId
           defaultSort
           defaultOrder
           fromFirst
@@ -103,8 +97,8 @@ spec = do
 
       it "Creates the first comment" $ do
         let
-          getAll = getComments
-            anyUser
+          getAll = getPostComments
+            fstId
             defaultSort
             defaultOrder
             fromFirst
@@ -125,7 +119,7 @@ spec = do
         let newComment' = newComment{NewCommentDto.postId = nil}
         runMock (createComment newComment') noComments `shouldThrow` serverError 404
 
-  describe "Given a blog with comments" $ do
+  describe "Given a blog with comments and replies" $ do
     let
       fstCommentId = makeId "127c2982-355b-4e06-9313-b63db0d1aa49"
       fstCommentUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
@@ -159,10 +153,43 @@ spec = do
         , Comment.updatedAt = makeUtc "2022-09-10 00:00"
         , Comment.parentId = Nothing
         }
-      comments = Map.fromList
-        [ (fstCommentId, Entity fstCommentId fstComment)
-        , (sndCommentId, Entity sndCommentId sndComment)
-        , (thirdCommentId, Entity thirdCommentId thirdComment)
+      fourthCommentId = makeId "11dba59c-f85d-45d8-a778-8405c6c61700"
+      fourthComment = Comment
+        { Comment.title = "Comment 4"
+        , Comment.content = "Comment content 4"
+        , Comment.userId = sndCommentUser
+        , Comment.postId = sndId
+        , Comment.createdAt = makeUtc "2022-10-03 00:00"
+        , Comment.updatedAt = makeUtc "2022-10-03 00:00"
+        , Comment.parentId = Nothing
+        }
+      fstReplyId = makeId "4cd4da9b-e53d-4649-9246-7ad5f4212b2f"
+      fstReply = Comment
+        { Comment.title = "Reply 1"
+        , Comment.content = "Reply content 1"
+        , Comment.userId = fstCommentUser
+        , Comment.postId = sndId
+        , Comment.createdAt = makeUtc "2022-09-23 00:00"
+        , Comment.updatedAt = makeUtc "2022-09-23 00:00"
+        , Comment.parentId = Just sndCommentId
+        }
+      sndReplyId = makeId "8ef2fd9b-5041-4173-a400-42a2944bb038"
+      sndReply = Comment
+        { Comment.title = "Reply 2"
+        , Comment.content = "Reply content 2"
+        , Comment.userId = sndCommentUser
+        , Comment.postId = sndId
+        , Comment.createdAt = makeUtc "2022-09-25 00:00"
+        , Comment.updatedAt = makeUtc "2022-09-25 00:00"
+        , Comment.parentId = Just sndCommentId
+        }
+      comments = StorageMock.storeFromList
+        [ (fstCommentId, fstComment)
+        , (sndCommentId, sndComment)
+        , (thirdCommentId, thirdComment)
+        , (fourthCommentId, fourthComment)
+        , (fstReplyId, fstReply)
+        , (sndReplyId, sndReply)
         ]
       givenComments = StorageMock.emptyStorage
         { StorageMock.posts = posts
@@ -171,51 +198,42 @@ spec = do
 
     it "Finds all comments" $ do
       let
-        getAll = getComments
-          anyUser
+        getBy = getPostComments
+          sndId
           defaultSort
           defaultOrder
           fromFirst
           defaultPageSize
-      runMock (length. Page.content <$> getAll) givenComments `shouldReturn` 3
+      commentsInPost <- runMock (Page.content <$> getBy) givenComments
+      length commentsInPost `shouldBe` 3
+      commentsInPost `shouldSatisfy` all ((== sndId) . Id . CommentDto.postId)
 
     it "Finds all comments sorted by title descending" $ do
       let
-        get = getComments anyUser sortTitle orderDesc fromFirst defaultPageSize
-        expectedTitles = Comment.title <$> [thirdComment, sndComment, fstComment]
+        get = getPostComments sndId sortTitle orderDesc fromFirst defaultPageSize
+        expectedTitles = Comment.title <$> [fourthComment, thirdComment, sndComment]
       page <- runMock get givenComments
       CommentDto.title <$> Page.content page `shouldBe` expectedTitles
       Page.hasNextPage page `shouldBe` False
       Page.nextCursor page `shouldBe` Nothing
       Page.pageSize page `shouldBe` Page.defaultPageSize
 
-    it "Finds all posts sorted by created-at ascending" $ do
+    it "Finds all comments sorted by created-at ascending" $ do
       let
-        get = getComments anyUser sortCreated orderAsc fromFirst defaultPageSize
-        expectedDates = Comment.createdAt <$> [thirdComment, fstComment, sndComment]
+        get = getPostComments sndId sortCreated orderAsc fromFirst defaultPageSize
+        expectedDates = Comment.createdAt
+          <$> [thirdComment, sndComment, fourthComment]
       page <- runMock get givenComments
       CommentDto.createdAt <$> Page.content page `shouldBe` expectedDates
       Page.hasNextPage page `shouldBe` False
       Page.nextCursor page `shouldBe` Nothing
       Page.pageSize page `shouldBe` Page.defaultPageSize
 
-    it "Finds all comments by post" $ do
-      let
-        getBy = getComments
-          (Just sndId)
-          defaultSort
-          defaultOrder
-          fromFirst
-          defaultPageSize
-      commentsInPost <- runMock (Page.content <$> getBy) givenComments
-      length commentsInPost `shouldBe` 2
-      commentsInPost `shouldSatisfy` all ((== sndId) . Id . CommentDto.postId)
-
     context "When paging by 2" $ do
-      let getAll = getComments anyUser sortCreated orderDesc fromFirst (Just 2)
+      let getAll = getPostComments sndId sortCreated orderDesc fromFirst (Just 2)
 
       it "Finds first 2 comments sorted by created-at descending" $ do
-        let expectedTitles = Comment.title <$> [sndComment, fstComment]
+        let expectedTitles = Comment.title <$> [fourthComment, sndComment]
         page <- runMock getAll givenComments
         CommentDto.title <$> Page.content page `shouldBe` expectedTitles
         Page.hasNextPage page `shouldBe` True
@@ -229,7 +247,7 @@ spec = do
           . fromJust
           . Page.nextCursor
         let
-          getNext = getComments anyUser sortCreated orderDesc cursor (Just 2)
+          getNext = getPostComments sndId sortCreated orderDesc cursor (Just 2)
           expectedTitles = [Comment.title thirdComment]
         page <- runMock getNext givenComments
         CommentDto.title <$> Page.content page `shouldBe` expectedTitles
@@ -251,3 +269,16 @@ spec = do
 
       it "Throws error if authored by other user" $ do
         runMock (deleteComment sndCommentId) givenComments `shouldThrow` serverError 403
+
+    it "Finds all replies" $ do
+      let
+        getReplies = getCommentReplies
+          sndCommentId
+          defaultSort
+          defaultOrder
+          fromFirst
+          defaultPageSize
+      repliesInPost <- runMock (Page.content <$> getReplies) givenComments
+      length repliesInPost `shouldBe` 2
+      repliesInPost `shouldSatisfy`
+        all ((== Just sndCommentId) . fmap Id . CommentDto.parentId)
