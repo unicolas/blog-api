@@ -118,15 +118,7 @@ postHandlers = PostRoutes
   }
 
 data CommentRoutes mode = CommentRoutes
-  { getComments :: mode
-      -- GET /comments
-      :- QueryParam "postId" (Id Post)
-      :> SortByParam Sort
-      :> OrderParam
-      :> CursorParam
-      :> PageSizeParam
-      :> Http.Get '[JSON] (Page CommentDto)
-  , getComment :: mode
+  { getComment :: mode
       -- GET /comments/:commentId
       :- Capture "comment" (Id Comment)
       :> Http.Get '[JSON] CommentDto
@@ -153,8 +145,7 @@ data CommentRoutes mode = CommentRoutes
 commentHandlers :: (?requestCtx :: RequestContext)
   => CommentRoutes (AsServerT App)
 commentHandlers = CommentRoutes
-  { getComments = CommentController.getComments
-  , getComment = CommentController.getComment
+  { getComment = CommentController.getComment
   , createComment = CommentController.createComment
   , deleteComment = CommentController.deleteComment
   , getCommentReplies = CommentController.getCommentReplies

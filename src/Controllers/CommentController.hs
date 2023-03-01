@@ -6,8 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Controllers.CommentController
-  ( getComments
-  , getComment
+  ( getComment
   , createComment
   , deleteComment
   , getPostComments
@@ -39,24 +38,6 @@ import qualified Stores.CommentStore as CommentStore
 import Stores.CommentStore (CommentStore)
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
-
-getComments :: (CommentStore m)
-  => Maybe (Id Post)
-  -> Maybe Sort
-  -> Maybe Order
-  -> Maybe Cursor
-  -> Maybe Int
-  -> m (Page CommentDto)
-getComments maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
-  let
-    sorting = Sorting.make maybeSort maybeOrder
-    pageSize = fromMaybe Page.defaultPageSize maybePageSize
-  comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId
-    sorting maybeCursor (1 + pageSize)
-  pure $ Page.make
-    (CommentDto.fromEntity <$> comments)
-    (Cursor.fromList sorting comments)
-    pageSize
 
 getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
 getComment commentId = do

@@ -24,14 +24,6 @@ instance CommentStore StorageMock where
   find :: Id Comment -> StorageMock (Maybe (Entity Comment))
   find commentId = gets (Map.lookup commentId . StorageMock.comments)
 
-  findAll :: Sorting -> Maybe Cursor -> Int -> StorageMock [Entity Comment]
-  findAll sorting maybeCursor n = gets
-    $ take n
-    . dropEntitiesBefore maybeCursor
-    . sortEntitiesBy sorting
-    . Map.elems
-    . StorageMock.comments
-
   save :: Comment -> StorageMock (Maybe (Id Comment))
   save comment = do
     commentId <- liftIO (Id <$> nextRandom)

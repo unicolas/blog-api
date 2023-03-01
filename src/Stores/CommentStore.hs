@@ -25,7 +25,6 @@ import qualified Stores.Query as Query
 
 class Monad m => CommentStore m where
   find :: Id Comment -> m (Maybe (Entity Comment))
-  findAll :: Sorting -> Maybe Cursor -> Int -> m [Entity Comment]
   save :: Comment -> m (Maybe (Id Comment))
   delete :: Id Comment -> m ()
   findByPost :: Id Post -> Sorting -> Maybe Cursor -> Int -> m [Entity Comment]
@@ -43,19 +42,6 @@ instance CommentStore App where
       & withResource pool
       & liftIO
     pure (listToMaybe comments)
-
-  findAll :: Sorting -> Maybe Cursor -> Int -> App [Entity Comment]
-  findAll sorting maybeCursor count = do
-    pool <- asks (connectionPool . databaseContext)
-    Query.fetch
-        [ "SELECT id, title, content, created_at, updated_at, post_id, user_id, parent_comment_id"
-        , "FROM comments"
-        , maybe mempty (("WHERE " <>) . cursorExpression) maybeCursor
-        , "ORDER BY",  sortExpression sorting
-        , "FETCH FIRST ? ROWS ONLY"
-        ] [count]
-      & withResource pool
-      & liftIO
 
   save :: Comment -> App (Maybe (Id Comment))
   save Comment{..} = do
