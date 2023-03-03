@@ -95,6 +95,21 @@ data PostRoutes mode = PostRoutes
       -- DELETE /posts/:postId
       :- Capture "postId" (Id Post)
       :> Http.Delete '[JSON] Http.NoContent
+  , getPostComments :: mode
+      -- GET /posts/:postId/comments
+      :- Capture "postId" (Id Post)
+      :> "comments"
+      :> SortByParam Sort
+      :> OrderParam
+      :> CursorParam
+      :> PageSizeParam
+      :> Http.Get '[JSON] (Page CommentDto)
+  , createPostComment :: mode
+      -- POST /posts/:postId/comments
+      :- Capture "postId" (Id Post)
+      :> "comments"
+      :> ReqBody '[JSON] NewCommentDto
+      :> Http.Post '[JSON] CommentIdDto
   }
   deriving Generic
 
@@ -105,37 +120,42 @@ postHandlers = PostRoutes
   , getPost = PostController.getPost
   , createPost = PostController.createPost
   , deletePost = PostController.deletePost
+  , getPostComments = CommentController.getPostComments
+  , createPostComment = CommentController.createPostComment
   }
 
 data CommentRoutes mode = CommentRoutes
-  { getComments :: mode
-      -- GET /comments
-      :- QueryParam "postId" (Id Post)
+  { getComment :: mode
+      -- GET /comments/:commentId
+      :- Capture "comment" (Id Comment)
+      :> Http.Get '[JSON] CommentDto
+  , deleteComment :: mode
+      -- DELETE /comments/:commentId
+      :- Capture "commentId" (Id Comment)
+      :> Http.Delete '[JSON] Http.NoContent
+  , getCommentReplies :: mode
+      -- GET /comments/:commentId/comments
+      :- Capture "commentId" (Id Comment)
+      :> "comments"
       :> SortByParam Sort
       :> OrderParam
       :> CursorParam
       :> PageSizeParam
       :> Http.Get '[JSON] (Page CommentDto)
-  , getComment :: mode
-      -- GET /comments/:commentId
-      :- Capture "comment" (Id Comment)
-      :> Http.Get '[JSON] CommentDto
-  , createComment :: mode
-      -- POST /comments
-      :- ReqBody '[JSON] NewCommentDto
-      :> Http.Post '[JSON] CommentIdDto
-  , deleteComment :: mode
-      -- DELETE /comments/:postId
+  , createCommentReply :: mode
+      -- POST /comments/:commentId/comments
       :- Capture "commentId" (Id Comment)
-      :> Http.Delete '[JSON] Http.NoContent
+      :> "comments"
+      :> ReqBody '[JSON] NewCommentDto
+      :> Http.Post '[JSON] CommentIdDto
   }
   deriving Generic
 
 commentHandlers :: (?requestCtx :: RequestContext)
   => CommentRoutes (AsServerT App)
 commentHandlers = CommentRoutes
-  { getComments = CommentController.getComments
-  , getComment = CommentController.getComment
-  , createComment = CommentController.createComment
+  { getComment = CommentController.getComment
   , deleteComment = CommentController.deleteComment
+  , getCommentReplies = CommentController.getCommentReplies
+  , createCommentReply = CommentController.createCommentReply
   }

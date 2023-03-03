@@ -3,20 +3,21 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Controllers.CommentController
-  ( getComments
-  , getComment
-  , createComment
+  ( getComment
+  , createPostComment
+  , createCommentReply
   , deleteComment
+  , getPostComments
+  , getCommentReplies
   ) where
 
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
-import Data.Maybe (fromMaybe, isNothing, listToMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Time (getCurrentTime)
 import Dto.CommentDto (CommentDto, CommentIdDto(..), NewCommentDto(..))
 import qualified Dto.CommentDto as CommentDto
@@ -28,7 +29,7 @@ import Models.Types.Cursor (Cursor)
 import qualified Models.Types.Cursor as Cursor
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
-import Models.Types.Sorting (Order, Sort)
+import Models.Types.Sorting (Order, Sort, Sorting)
 import qualified Models.Types.Sorting as Sorting
 import qualified RequestContext
 import RequestContext (RequestContext)
@@ -38,22 +39,6 @@ import Stores.CommentStore (CommentStore)
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
 
-getComments :: (CommentStore m)
-  => Maybe (Id Post)
-  -> Maybe Sort
-  -> Maybe Order
-  -> Maybe Cursor
-  -> Maybe Int
-  -> m (Page CommentDto)
-getComments maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
-  let
-    sorting = Sorting.make maybeSort maybeOrder
-    pageSize = fromMaybe Page.defaultPageSize maybePageSize
-  comments <- maybe CommentStore.findAll CommentStore.findByPost maybeId
-    sorting maybeCursor (1 + pageSize)
-  let nextCursor = Cursor.make sorting <$> (listToMaybe . reverse) comments
-  pure $ Page.make (CommentDto.fromEntity <$> comments) nextCursor pageSize
-
 getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
 getComment commentId = do
   maybeComment <- CommentStore.find commentId
@@ -62,20 +47,21 @@ getComment commentId = do
     Just dto -> pure dto
     Nothing -> throwM (Error.notFound "Could not find comment with such ID.")
 
-createComment :: (?requestCtx :: RequestContext)
+createPostComment :: (?requestCtx :: RequestContext)
   => (MonadThrow m, CommentStore m, PostStore m, MonadIO m)
-  => NewCommentDto -> m CommentIdDto
-createComment dto@NewCommentDto{..} = do
-  maybePost <- PostStore.find (Id postId)
+  => Id Post -> NewCommentDto -> m CommentIdDto
+createPostComment postId dto = do
+  maybePost <- PostStore.find postId
   when (isNothing maybePost)
     $ throwM (Error.notFound "Could not find post with such ID.")
-  now <- liftIO getCurrentTime
-  let
-    userId = RequestContext.userId ?requestCtx
-    comment = CommentDto.toComment dto userId now now
-  CommentStore.save comment >>= \case
-    Just (Id commentId) -> pure CommentIdDto {commentId}
-    Nothing -> throwM (Error.serverError "Failed to create comment.")
+  createComment postId Nothing dto
+
+createCommentReply :: (?requestCtx :: RequestContext)
+  => (MonadThrow m, CommentStore m, MonadIO m)
+  => Id Comment -> NewCommentDto -> m CommentIdDto
+createCommentReply parentId dto = CommentStore.find parentId >>= \case
+  Nothing -> throwM (Error.notFound "Could not find comment with such ID.")
+  Just (Entity _ Comment {postId}) -> createComment postId (Just parentId) dto
 
 deleteComment :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)
   => Id Comment -> m Http.NoContent
@@ -85,3 +71,51 @@ deleteComment commentId = CommentStore.find commentId >>= \case
     when (userId /= RequestContext.userId ?requestCtx) $ throwM Error.forbidden
     CommentStore.delete commentId
     pure Http.NoContent
+
+getPostComments :: (CommentStore m)
+  => Id Post
+  -> Maybe Sort
+  -> Maybe Order
+  -> Maybe Cursor
+  -> Maybe Int
+  -> m (Page CommentDto)
+getPostComments = getCommentsBy CommentStore.findByPost
+
+getCommentReplies :: (CommentStore m)
+  => Id Comment
+  -> Maybe Sort
+  -> Maybe Order
+  -> Maybe Cursor
+  -> Maybe Int
+  -> m (Page CommentDto)
+getCommentReplies = getCommentsBy CommentStore.findByComment
+
+getCommentsBy :: CommentStore m
+  => (Id model -> Sorting -> Maybe Cursor -> Int -> m [Entity Comment])
+  -> Id model
+  -> Maybe Sort
+  -> Maybe Order
+  -> Maybe Cursor
+  -> Maybe Int
+  -> m (Page CommentDto)
+getCommentsBy find modelId maybeSort maybeOrder maybeCursor maybePageSize = do
+  let
+    sorting = Sorting.make maybeSort maybeOrder
+    pageSize = fromMaybe Page.defaultPageSize maybePageSize
+  comments <- find modelId sorting maybeCursor (1 + pageSize)
+  pure $ Page.make
+    (CommentDto.fromEntity <$> comments)
+    (Cursor.fromList sorting comments)
+    pageSize
+
+createComment :: (?requestCtx::RequestContext)
+  => (MonadIO m, CommentStore m, MonadThrow m)
+  => Id Post -> Maybe (Id Comment) -> NewCommentDto -> m CommentIdDto
+createComment postId maybeParent dto = do
+  now <- liftIO getCurrentTime
+  let
+    userId = RequestContext.userId ?requestCtx
+    comment = CommentDto.toComment dto userId postId maybeParent now now
+  CommentStore.save comment >>= \case
+    Just (Id commentId) -> pure CommentIdDto {commentId}
+    Nothing -> throwM (Error.serverError "Failed to create comment.")

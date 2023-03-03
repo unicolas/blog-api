@@ -7,6 +7,7 @@ module Mocks.CommentStore (CommentStore(..)) where
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets, modify)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (isNothing)
 import Data.UUID.V4 (nextRandom)
 import Mocks.StorageMock (StorageMock)
 import qualified Mocks.StorageMock as StorageMock
@@ -23,14 +24,6 @@ instance CommentStore StorageMock where
   find :: Id Comment -> StorageMock (Maybe (Entity Comment))
   find commentId = gets (Map.lookup commentId . StorageMock.comments)
 
-  findAll :: Sorting -> Maybe Cursor -> Int -> StorageMock [Entity Comment]
-  findAll sorting maybeCursor n = gets
-    $ take n
-    . dropEntitiesBefore maybeCursor
-    . sortEntitiesBy sorting
-    . Map.elems
-    . StorageMock.comments
-
   save :: Comment -> StorageMock (Maybe (Id Comment))
   save comment = do
     commentId <- liftIO (Id <$> nextRandom)
@@ -45,12 +38,24 @@ instance CommentStore StorageMock where
     modify (\s -> s {StorageMock.comments = comments})
 
   findByPost :: Id Post -> Sorting -> Maybe Cursor -> Int -> StorageMock [Entity Comment]
-  findByPost idPost sorting maybeCursor n = gets
-    $ take n
-    . dropEntitiesBefore maybeCursor
-    . sortEntitiesBy sorting
-    . filter forPost
-    . Map.elems
-    . StorageMock.comments
-    where
-      forPost (Entity _ comment) = idPost == postId comment
+  findByPost = findBy
+    $ \idPost (Entity _ comment)
+      -> idPost == postId comment && isNothing (parentId comment)
+
+  findByComment :: Id Comment -> Sorting -> Maybe Cursor -> Int -> StorageMock [Entity Comment]
+  findByComment = findBy
+    $ \idComment (Entity _ comment) -> Just idComment == parentId comment
+
+findBy :: (Id model -> Entity Comment -> Bool)
+  -> Id model
+  -> Sorting
+  -> Maybe Cursor
+  -> Int
+  -> StorageMock [Entity Comment]
+findBy p modelId sorting maybeCursor n = gets
+  $ take n
+  . dropEntitiesBefore maybeCursor
+  . sortEntitiesBy sorting
+  . filter (p modelId)
+  . Map.elems
+  . StorageMock.comments

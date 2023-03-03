@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Dto.CommentDto
@@ -18,8 +19,10 @@ import Data.Time (UTCTime)
 import Data.UUID (UUID)
 import GHC.Generics (Generic)
 import Models.Comment (Comment(..))
+import Models.Post (Post)
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
+import qualified Models.Types.Id as Id
 import Models.User (User)
 
 data CommentDto = CommentDto
@@ -30,22 +33,23 @@ data CommentDto = CommentDto
   , updatedAt :: !UTCTime
   , postId :: !UUID
   , authorId :: !UUID
+  , parentId :: !(Maybe UUID)
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 fromEntity :: Entity Comment -> CommentDto
-fromEntity (Entity (Id cid) comment) = fromComment comment
+fromEntity (Entity commentId comment) = fromComment comment
   where
     fromComment
       Comment
-        { postId = (Id pid)
-        , userId = (Id aid)
+        { userId
         , ..
         }
       = CommentDto
-        { commentId = cid
-        , postId = pid
-        , authorId = aid
+        { commentId = Id.unwrap commentId
+        , postId = Id.unwrap postId
+        , authorId = Id.unwrap userId
+        , parentId = Id.unwrap <$> parentId
         , ..
         }
 
@@ -58,10 +62,15 @@ toCommentId CommentIdDto{..} = Id commentId
 data NewCommentDto = NewCommentDto
   { title :: !Text
   , content :: !Text
-  , postId :: !UUID
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-toComment :: NewCommentDto  -> Id User ->UTCTime -> UTCTime ->  Comment
-toComment NewCommentDto {postId = pid , ..} userId createdAt updatedAt
-  = Comment {postId = Id pid, ..}
+toComment :: NewCommentDto
+  -> Id User
+  -> Id Post
+  -> Maybe (Id Comment)
+  -> UTCTime
+  -> UTCTime
+  -> Comment
+toComment NewCommentDto {..} userId postId parentId createdAt updatedAt
+  = Comment {..}

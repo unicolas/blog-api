@@ -2,7 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 
-module Models.Types.Id (Id(..)) where
+module Models.Types.Id (Id(..), unwrap) where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
@@ -26,3 +26,6 @@ instance Postgres.ToField (Id phantom) where
 instance Postgres.FromField (Id phantom) where
   fromField :: Postgres.FieldParser (Id phantom)
   fromField f s = Id <$> Postgres.fromField f s
+
+unwrap :: Id phantom -> UUID
+unwrap (Id uuid) = uuid
