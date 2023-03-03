@@ -19,6 +19,7 @@ import Data.Time (UTCTime)
 import Data.UUID (UUID)
 import GHC.Generics (Generic)
 import Models.Comment (Comment(..))
+import Models.Post (Post)
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
 import qualified Models.Types.Id as Id
@@ -61,23 +62,15 @@ toCommentId CommentIdDto{..} = Id commentId
 data NewCommentDto = NewCommentDto
   { title :: !Text
   , content :: !Text
-  , postId :: !UUID
-  , parentId :: !(Maybe UUID)
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-toComment :: NewCommentDto -> Id User -> UTCTime -> UTCTime ->  Comment
-toComment
-  NewCommentDto
-    { postId
-    , parentId
-    , ..
-    }
-    userId
-    createdAt
-    updatedAt
-  = Comment
-    { postId = Id postId
-    , parentId = Id <$> parentId
-    , ..
-    }
+toComment :: NewCommentDto
+  -> Id User
+  -> Id Post
+  -> Maybe (Id Comment)
+  -> UTCTime
+  -> UTCTime
+  -> Comment
+toComment NewCommentDto {..} userId postId parentId createdAt updatedAt
+  = Comment {..}

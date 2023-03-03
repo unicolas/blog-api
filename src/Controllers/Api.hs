@@ -104,6 +104,12 @@ data PostRoutes mode = PostRoutes
       :> CursorParam
       :> PageSizeParam
       :> Http.Get '[JSON] (Page CommentDto)
+  , createPostComment :: mode
+      -- POST /posts/:postId/comments
+      :- Capture "postId" (Id Post)
+      :> "comments"
+      :> ReqBody '[JSON] NewCommentDto
+      :> Http.Post '[JSON] CommentIdDto
   }
   deriving Generic
 
@@ -115,6 +121,7 @@ postHandlers = PostRoutes
   , createPost = PostController.createPost
   , deletePost = PostController.deletePost
   , getPostComments = CommentController.getPostComments
+  , createPostComment = CommentController.createPostComment
   }
 
 data CommentRoutes mode = CommentRoutes
@@ -122,10 +129,6 @@ data CommentRoutes mode = CommentRoutes
       -- GET /comments/:commentId
       :- Capture "comment" (Id Comment)
       :> Http.Get '[JSON] CommentDto
-  , createComment :: mode
-      -- POST /comments
-      :- ReqBody '[JSON] NewCommentDto
-      :> Http.Post '[JSON] CommentIdDto
   , deleteComment :: mode
       -- DELETE /comments/:commentId
       :- Capture "commentId" (Id Comment)
@@ -139,6 +142,12 @@ data CommentRoutes mode = CommentRoutes
       :> CursorParam
       :> PageSizeParam
       :> Http.Get '[JSON] (Page CommentDto)
+  , createCommentReply :: mode
+      -- POST /comments/:commentId/comments
+      :- Capture "commentId" (Id Comment)
+      :> "comments"
+      :> ReqBody '[JSON] NewCommentDto
+      :> Http.Post '[JSON] CommentIdDto
   }
   deriving Generic
 
@@ -146,7 +155,7 @@ commentHandlers :: (?requestCtx :: RequestContext)
   => CommentRoutes (AsServerT App)
 commentHandlers = CommentRoutes
   { getComment = CommentController.getComment
-  , createComment = CommentController.createComment
   , deleteComment = CommentController.deleteComment
   , getCommentReplies = CommentController.getCommentReplies
+  , createCommentReply = CommentController.createCommentReply
   }

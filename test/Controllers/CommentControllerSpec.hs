@@ -4,7 +4,13 @@
 module Controllers.CommentControllerSpec (spec) where
 
 import Controllers.CommentController
-  (createComment, deleteComment, getComment, getCommentReplies, getPostComments)
+  ( createCommentReply
+  , createPostComment
+  , deleteComment
+  , getComment
+  , getCommentReplies
+  , getPostComments
+  )
 import Data.Either (fromRight)
 import Data.Functor ((<&>))
 import Data.Maybe (fromJust)
@@ -24,6 +30,7 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import qualified Models.Types.Cursor as Cursor
 import Models.Types.Id (Id(..))
+import qualified Models.Types.Id as Id
 import qualified Models.Types.Sorting as Order (Order(Asc, Desc))
 import qualified Models.Types.Sorting as Sort (Sort(CreatedAt, Title))
 import RequestContext (RequestContext(..))
@@ -91,8 +98,6 @@ spec = do
         newComment = NewCommentDto
           { NewCommentDto.title = "Title"
           , NewCommentDto.content = "Content"
-          , NewCommentDto.postId = getUuid fstId
-          , NewCommentDto.parentId = Nothing
           }
 
       it "Creates the first comment" $ do
@@ -103,21 +108,23 @@ spec = do
             defaultOrder
             fromFirst
             defaultPageSize
-          createThenGet = createComment newComment *> getAll
+          createThenGet = createPostComment fstId newComment *> getAll
         runMock (length . Page.content <$> createThenGet) noComments `shouldReturn` 1
 
       it "Finds the comment" $ do
         comment <- runMock
-          (createComment newComment >>= getComment . CommentIdDto.toCommentId)
-          noComments
+          (createPostComment fstId newComment
+            >>= getComment . CommentIdDto.toCommentId
+          ) noComments
         CommentDto.title comment `shouldBe` NewCommentDto.title newComment
         CommentDto.content comment `shouldBe` NewCommentDto.content newComment
         CommentDto.authorId comment `shouldBe` getUuid idUser
-        CommentDto.parentId comment `shouldBe` NewCommentDto.parentId newComment
+        CommentDto.parentId comment `shouldBe` Nothing
+        CommentDto.postId comment `shouldBe` Id.unwrap fstId
 
       it "Throws error if commented post does not exist" $ do
-        let newComment' = newComment{NewCommentDto.postId = nil}
-        runMock (createComment newComment') noComments `shouldThrow` serverError 404
+        runMock (createPostComment (Id nil) newComment) noComments
+          `shouldThrow` serverError 404
 
   describe "Given a blog with comments and replies" $ do
     let
@@ -269,6 +276,28 @@ spec = do
 
       it "Throws error if authored by other user" $ do
         runMock (deleteComment sndCommentId) givenComments `shouldThrow` serverError 403
+
+    context "When creating a reply" $ do
+      let
+        newComment = NewCommentDto
+          { NewCommentDto.title = "Title"
+          , NewCommentDto.content = "Content"
+          }
+
+      it "Finds the reply" $ do
+        comment <- runMock
+          (createCommentReply fstCommentId newComment
+            >>= getComment . CommentIdDto.toCommentId
+          ) givenComments
+        CommentDto.title comment `shouldBe` NewCommentDto.title newComment
+        CommentDto.content comment `shouldBe` NewCommentDto.content newComment
+        CommentDto.authorId comment `shouldBe` getUuid idUser
+        CommentDto.parentId comment `shouldBe` Just (Id.unwrap fstCommentId)
+        CommentDto.postId comment `shouldBe` Id.unwrap fstId
+
+      it "Throws error if replied comment does not exist" $ do
+        runMock (createCommentReply (Id nil) newComment) givenComments
+          `shouldThrow` serverError 404
 
     it "Finds all replies" $ do
       let

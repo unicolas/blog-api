@@ -3,11 +3,11 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Controllers.CommentController
   ( getComment
-  , createComment
+  , createPostComment
+  , createCommentReply
   , deleteComment
   , getPostComments
   , getCommentReplies
@@ -47,20 +47,21 @@ getComment commentId = do
     Just dto -> pure dto
     Nothing -> throwM (Error.notFound "Could not find comment with such ID.")
 
-createComment :: (?requestCtx :: RequestContext)
+createPostComment :: (?requestCtx :: RequestContext)
   => (MonadThrow m, CommentStore m, PostStore m, MonadIO m)
-  => NewCommentDto -> m CommentIdDto
-createComment dto@NewCommentDto{..} = do
-  maybePost <- PostStore.find (Id postId)
+  => Id Post -> NewCommentDto -> m CommentIdDto
+createPostComment postId dto = do
+  maybePost <- PostStore.find postId
   when (isNothing maybePost)
     $ throwM (Error.notFound "Could not find post with such ID.")
-  now <- liftIO getCurrentTime
-  let
-    userId = RequestContext.userId ?requestCtx
-    comment = CommentDto.toComment dto userId now now
-  CommentStore.save comment >>= \case
-    Just (Id commentId) -> pure CommentIdDto {commentId}
-    Nothing -> throwM (Error.serverError "Failed to create comment.")
+  createComment postId Nothing dto
+
+createCommentReply :: (?requestCtx :: RequestContext)
+  => (MonadThrow m, CommentStore m, MonadIO m)
+  => Id Comment -> NewCommentDto -> m CommentIdDto
+createCommentReply parentId dto = CommentStore.find parentId >>= \case
+  Nothing -> throwM (Error.notFound "Could not find comment with such ID.")
+  Just (Entity _ Comment {postId}) -> createComment postId (Just parentId) dto
 
 deleteComment :: (?requestCtx :: RequestContext, MonadThrow m, CommentStore m)
   => Id Comment -> m Http.NoContent
@@ -106,3 +107,15 @@ getCommentsBy find modelId maybeSort maybeOrder maybeCursor maybePageSize = do
     (CommentDto.fromEntity <$> comments)
     (Cursor.fromList sorting comments)
     pageSize
+
+createComment :: (?requestCtx::RequestContext)
+  => (MonadIO m, CommentStore m, MonadThrow m)
+  => Id Post -> Maybe (Id Comment) -> NewCommentDto -> m CommentIdDto
+createComment postId maybeParent dto = do
+  now <- liftIO getCurrentTime
+  let
+    userId = RequestContext.userId ?requestCtx
+    comment = CommentDto.toComment dto userId postId maybeParent now now
+  CommentStore.save comment >>= \case
+    Just (Id commentId) -> pure CommentIdDto {commentId}
+    Nothing -> throwM (Error.serverError "Failed to create comment.")
