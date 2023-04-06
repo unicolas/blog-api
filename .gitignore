@@ -3,3 +3,5 @@
 .devcontainer/library-scripts/
 .devcontainer/library-scripts/*
 .env
+logs/*
+!logs/.gitkeep

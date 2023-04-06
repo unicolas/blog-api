@@ -3,10 +3,12 @@
 module AppContext (AppContext(..), make) where
 
 import DatabaseContext (DatabaseContext)
+import LoggingContext (LoggingContext)
 
-newtype AppContext = AppContext
-  { databaseContext :: DatabaseContext
+data AppContext = AppContext
+  { databaseContext :: !DatabaseContext
+  , loggingContext :: !LoggingContext
   }
 
-make :: DatabaseContext -> AppContext
-make databaseContext = AppContext {..}
+make :: DatabaseContext -> LoggingContext -> AppContext
+make databaseContext loggingContext = AppContext {..}

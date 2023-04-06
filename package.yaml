@@ -25,6 +25,7 @@ dependencies:
   - base64
   - dotenv
   - exceptions
+  - fast-logger
   - jose
   - mtl
   - password

@@ -14,6 +14,9 @@ import Data.ByteString.UTF8 (fromString)
 import Data.Maybe (fromMaybe)
 import DatabaseContext (DatabaseContext)
 import qualified DatabaseContext
+import LoggingContext (LoggingContext)
+import qualified LoggingContext
+import qualified LoggingContext as LoggerConfig (LoggerConfig(..))
 import Network.Wai.Handler.Warp (run)
 import Servant (Context(..))
 import qualified Servant.Auth.Server as Sas
@@ -24,9 +27,10 @@ import Text.Read (readMaybe)
 main :: IO ()
 main = loadEnv *> do
   dbCtx <- makeDbCtxFromEnv
+  loggingCtx <- makeLoggingCtxFromEnv
   key <- makeJwkFromEnv
   port <- lookupEnvOrDefault "APP_PORT" 8000
-  let ?appCtx = AppContext dbCtx
+  let ?appCtx = AppContext dbCtx loggingCtx
   let
     jwtSettings = Sas.defaultJWTSettings key
     cookieSettings = Sas.defaultCookieSettings
@@ -55,3 +59,16 @@ makeJwkFromEnv :: IO JWK
 makeJwkFromEnv = do
   secret <- Environment.lookupEnv "JWT_SECRET"
   maybe Sas.generateKey (pure . Sas.fromSecret . fromString) secret
+
+makeLoggingCtxFromEnv :: IO LoggingContext
+makeLoggingCtxFromEnv = do
+  level <- lookupEnvOrDefault "LOG_LEVEL" LoggingContext.Info
+  filename <- lookupEnvOrDefault "LOG_FILENAME" "app"
+  timeFormat <- lookupEnvOrDefault "LOG_TIME_FORMAT" LoggingContext.defaultTimeFormat
+  bufferSize <- lookupEnvOrDefault "LOG_BUFFER_SIZE" LoggingContext.defaultBufferSize
+  LoggingContext.make LoggingContext.LoggerConfig
+    { LoggerConfig.level = level
+    , LoggerConfig.file = "logs/" <> filename <> ".log"
+    , LoggerConfig.timeFormat = timeFormat
+    , LoggerConfig.bufferSize = bufferSize
+    }
