@@ -123,6 +123,7 @@ test-suite blog-api-test
       Controllers.PostControllerSpec
       Mocks.AppMock
       Mocks.CommentStore
+      Mocks.Logger
       Mocks.PostStore
       Mocks.UserStore
       Utils
