@@ -7,8 +7,8 @@ import qualified Controllers.AuthController as LoginRequest
 import Data.ByteString.UTF8 (toString)
 import Data.List (isPrefixOf)
 import qualified Data.Map as Map
-import Mocks.StorageMock (runMock)
-import qualified Mocks.StorageMock as StorageMock
+import Mocks.AppMock (runMock)
+import qualified Mocks.AppMock as AppMock
 import Mocks.UserStore ()
 import Models.Credentials (Credentials(Credentials))
 import qualified Models.Credentials as Credentials
@@ -46,9 +46,9 @@ spec = do
         , Credentials.password = userPsw
         }
       credentials = Map.fromList [(aUserId, someCreds)]
-      givenUsers = StorageMock.emptyStorage
-        { StorageMock.users = users
-        , StorageMock.credentials = credentials
+      givenUsers = AppMock.emptyStorage
+        { AppMock.users = users
+        , AppMock.credentials = credentials
         }
 
     context "When providing correct login credentials" $ do

@@ -36,6 +36,8 @@ library
       Dto.CommentDto
       Dto.Page
       Dto.PostDto
+      Logger
+      LoggingContext
       Models.Comment
       Models.Credentials
       Models.Post
@@ -62,6 +64,7 @@ library
     , base64
     , dotenv
     , exceptions
+    , fast-logger
     , jose
     , mtl
     , password
@@ -93,6 +96,7 @@ executable blog-api-exe
     , blog-api
     , dotenv
     , exceptions
+    , fast-logger
     , jose
     , mtl
     , password
@@ -117,9 +121,10 @@ test-suite blog-api-test
       Controllers.AuthControllerSpec
       Controllers.CommentControllerSpec
       Controllers.PostControllerSpec
+      Mocks.AppMock
       Mocks.CommentStore
+      Mocks.Logger
       Mocks.PostStore
-      Mocks.StorageMock
       Mocks.UserStore
       Utils
       Paths_blog_api
@@ -136,6 +141,7 @@ test-suite blog-api-test
     , containers
     , dotenv
     , exceptions
+    , fast-logger
     , hspec
     , jose
     , mtl

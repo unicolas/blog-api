@@ -1,6 +1,6 @@
-module Mocks.StorageMock
+module Mocks.AppMock
   ( runMock
-  , StorageMock
+  , AppMock
   , Storage(..)
   , emptyStorage
   , storeFromList
@@ -23,9 +23,9 @@ data Storage = MakeStorage
   , comments :: !(Map (Id Comment) (Entity Comment))
   }
 
-type StorageMock = StateT Storage IO
+type AppMock = StateT Storage IO
 
-runMock :: StorageMock a -> Storage -> IO a
+runMock :: AppMock a -> Storage -> IO a
 runMock st kv = fst <$> runStateT st kv
 
 emptyStorage :: Storage
