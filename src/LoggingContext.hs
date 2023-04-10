@@ -11,7 +11,7 @@ module LoggingContext
   , make
   ) where
 
-import Control.Monad (join)
+import Control.Monad (join, void)
 import Data.ByteString.UTF8 (fromString)
 import System.Log.FastLogger
   ( BufSize
@@ -51,7 +51,7 @@ make LoggerConfig{..} = do
         { timed_log_file = file
         , timed_timefmt = fromString "%F"
         , timed_same_timeframe = (==)
-        , timed_post_process = \_ -> pure ()
+        , timed_post_process = void . pure
         }
       bufferSize
 
