@@ -20,10 +20,10 @@ import qualified Dto.CommentDto as CommentDto (CommentDto(..))
 import qualified Dto.CommentDto as CommentIdDto (toCommentId)
 import qualified Dto.CommentDto as NewCommentDto (NewCommentDto(..))
 import qualified Dto.Page as Page
+import Mocks.AppMock (runMock)
+import qualified Mocks.AppMock as AppMock
 import Mocks.CommentStore ()
 import Mocks.PostStore ()
-import Mocks.StorageMock (runMock)
-import qualified Mocks.StorageMock as StorageMock
 import Models.Comment (Comment(..))
 import qualified Models.Comment as Comment
 import Models.Post (Post(Post))
@@ -68,7 +68,7 @@ spec = do
       , Post.createdAt = makeUtc "2022-09-17 00:00"
       , Post.updatedAt = makeUtc "2022-09-17 00:00"
       }
-    posts = StorageMock.storeFromList [(fstId, fstPost), (sndId, sndPost)]
+    posts = AppMock.storeFromList [(fstId, fstPost), (sndId, sndPost)]
     idUser = makeId "b73894f9-39e0-427a-abb4-48ff7322d3ab"
     defaultSort = Nothing
     defaultOrder = Nothing
@@ -81,7 +81,7 @@ spec = do
   let ?requestCtx = RequestContext {RequestContext.userId = idUser}
 
   describe "Given a blog with posts and no comments" $ do
-    let noComments = StorageMock.emptyStorage {StorageMock.posts = posts}
+    let noComments = AppMock.emptyStorage {AppMock.posts = posts}
 
     it "Does not find post comments" $ do
       let
@@ -190,7 +190,7 @@ spec = do
         , Comment.updatedAt = makeUtc "2022-09-25 00:00"
         , Comment.parentId = Just sndCommentId
         }
-      comments = StorageMock.storeFromList
+      comments = AppMock.storeFromList
         [ (fstCommentId, fstComment)
         , (sndCommentId, sndComment)
         , (thirdCommentId, thirdComment)
@@ -198,9 +198,9 @@ spec = do
         , (fstReplyId, fstReply)
         , (sndReplyId, sndReply)
         ]
-      givenComments = StorageMock.emptyStorage
-        { StorageMock.posts = posts
-        , StorageMock.comments = comments
+      givenComments = AppMock.emptyStorage
+        { AppMock.posts = posts
+        , AppMock.comments = comments
         }
 
     it "Finds all comments" $ do

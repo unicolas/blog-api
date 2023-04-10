@@ -14,9 +14,9 @@ import Dto.PostDto (NewPostDto(NewPostDto))
 import qualified Dto.PostDto as NewPostDto (NewPostDto(..))
 import qualified Dto.PostDto as PostDto (PostDto(..))
 import qualified Dto.PostDto as PostIdDto (toPostId)
+import Mocks.AppMock (runMock)
+import qualified Mocks.AppMock as AppMock
 import Mocks.PostStore ()
-import Mocks.StorageMock (runMock)
-import qualified Mocks.StorageMock as StorageMock
 import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import qualified Models.Types.Cursor as Cursor
@@ -54,7 +54,7 @@ spec = do
   let ?requestCtx = RequestContext {RequestContext.userId = idUser}
 
   describe "Given a blog with no posts" $ do
-    let noPosts = StorageMock.emptyStorage
+    let noPosts = AppMock.emptyStorage
 
     it "Does not find a single post" $ do
       let
@@ -125,7 +125,7 @@ spec = do
         , (sndId, Entity sndId sndPost)
         , (thirdId, Entity thirdId thirdPost)
         ]
-      givenPosts = StorageMock.emptyStorage {StorageMock.posts = posts}
+      givenPosts = AppMock.emptyStorage {AppMock.posts = posts}
 
     it "Finds all posts" $ do
       let
