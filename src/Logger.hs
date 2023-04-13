@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Logger (Logger (..)) where
 
@@ -34,8 +35,8 @@ instance Logger App where
 
 logMsg :: LogLevel -> Text -> App ()
 logMsg lvl msg = do
-  ctx <- asks loggingContext
-  when (level ctx <= lvl) (logger ctx compose *> cleanUp ctx)
+  LoggingContext{..} <- asks loggingContext
+  when (level <= lvl) (logger compose)
     & liftIO
   where
     compose time = mconcat
