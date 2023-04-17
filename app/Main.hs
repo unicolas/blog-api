@@ -24,7 +24,8 @@ import qualified System.Environment as Environment
 import Text.Read (readMaybe)
 
 main :: IO ()
-main = loadEnv *> do
+main = do
+  loadEnv
   dbCtx <- makeDbCtxFromEnv
   loggingCtx <- makeLoggingCtxFromEnv
   key <- makeJwkFromEnv
@@ -38,7 +39,7 @@ main = loadEnv *> do
     app = genericServeTWithContext App.transform server ctx
   run port app
 
-loadEnv :: IO [(String, String)]
+loadEnv :: IO ()
 loadEnv = Dotenv.loadFile Dotenv.defaultConfig
 
 lookupEnvOrDefault :: Read a => String -> a -> IO a
