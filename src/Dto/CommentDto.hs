@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -54,7 +55,8 @@ fromEntity (Entity commentId comment) = fromComment comment
         }
 
 newtype CommentIdDto = CommentIdDto {commentId :: UUID}
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass ToJSON
 
 toCommentId :: CommentIdDto -> Id Comment
 toCommentId CommentIdDto{..} = Id commentId

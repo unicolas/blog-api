@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -47,7 +48,8 @@ fromEntity (Entity (Id pid) post) = fromPost post
         }
 
 newtype PostIdDto = PostIdDto {postId :: UUID}
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass ToJSON
 
 toPostId :: PostIdDto -> Id Post
 toPostId PostIdDto{..} = Id postId

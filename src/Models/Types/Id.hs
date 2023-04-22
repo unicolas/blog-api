@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 
@@ -13,7 +14,8 @@ import GHC.Generics (Generic)
 import qualified Servant
 
 newtype Id phantom = Id UUID
-  deriving (Show, Read, Eq, Ord, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Read, Eq, Ord, Generic)
+  deriving newtype (FromJSON, ToJSON)
 
 instance Servant.FromHttpApiData (Id phantom) where
   parseUrlPiece :: Text -> Either Text (Id phantom)

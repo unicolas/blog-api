@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Controllers.Types.Error
@@ -32,7 +33,9 @@ import Servant
   , err500
   )
 
-newtype Error = Error { error :: Text } deriving (Generic, ToJSON)
+newtype Error = Error { error :: Text }
+  deriving stock Generic
+  deriving anyclass ToJSON
 
 withMessage :: ServerError -> Text -> ServerError
 withMessage err message = err {errBody = Aeson.encode (Error message)}
