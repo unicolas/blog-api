@@ -1,5 +1,3 @@
-{-# LANGUAGE InstanceSigs #-}
-
 module Models.Types.Aggregate (Aggregate(..)) where
 
 import qualified Database.PostgreSQL.Simple.FromRow as Postgres

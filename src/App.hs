@@ -1,7 +1,4 @@
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImplicitParams #-}
-{-# LANGUAGE InstanceSigs #-}
 
 module App (App(..), transform) where
 

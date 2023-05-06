@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -80,7 +80,7 @@ library
     , uuid
     , wai
     , warp
-  default-language: Haskell2010
+  default-language: GHC2021
 
 executable blog-api-exe
   main-is: Main.hs
@@ -112,7 +112,7 @@ executable blog-api-exe
     , uuid
     , wai
     , warp
-  default-language: Haskell2010
+  default-language: GHC2021
 
 test-suite blog-api-test
   type: exitcode-stdio-1.0
@@ -158,4 +158,4 @@ test-suite blog-api-test
     , uuid
     , wai
     , warp
-  default-language: Haskell2010
+  default-language: GHC2021
