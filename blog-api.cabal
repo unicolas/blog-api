@@ -41,6 +41,7 @@ library
       Models.Comment
       Models.Credentials
       Models.Post
+      Models.Tag
       Models.Types.Aggregate
       Models.Types.Cursor
       Models.Types.Entity
@@ -52,6 +53,7 @@ library
       Stores.CommentStore
       Stores.PostStore
       Stores.Query
+      Stores.TagStore
       Stores.UserStore
   other-modules:
       Paths_blog_api

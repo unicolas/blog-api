@@ -2,10 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Stores.PostStore (PostStore (..)) where
+module Stores.PostStore (PostStore (..), findWithTags) where
 
 import App (App)
 import AppContext (AppContext(..))
+import Control.Arrow ((&&&))
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader (asks)
@@ -15,12 +16,16 @@ import Data.Pool (withResource)
 import Database.PostgreSQL.Simple (fromOnly)
 import DatabaseContext (DatabaseContext(..))
 import Models.Post (Post(..))
+import Models.Tag (Tag)
+import Models.Types.Aggregate (Aggregate(..), aggregateMaybe)
 import Models.Types.Cursor (Cursor, cursorExpression)
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
 import Models.Types.Sorting (Sorting, sortExpression)
 import Models.User (User)
 import qualified Stores.Query as Query
+import qualified Stores.TagStore as TagStore
+import Stores.TagStore (TagStore)
 
 class Monad m => PostStore m where
   find :: Id Post -> m (Maybe (Entity Post))
@@ -88,3 +93,8 @@ instance PostStore App where
         ] (idAuthor, count)
       & withResource pool
       & liftIO
+
+findWithTags :: (PostStore m, TagStore m)
+  => Id Post
+  -> m (Maybe (Aggregate Post [Tag]))
+findWithTags = aggregateMaybe . (find &&& TagStore.findByPost)
