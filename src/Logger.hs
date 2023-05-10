@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Logger (Logger (..)) where
+module Logger (Logger(..), logDebug, logInfo, logWarn, logError) where
 
 import App (App)
 import AppContext (AppContext(..))
@@ -14,34 +14,31 @@ import LoggingContext (LogLevel(..), LoggingContext(..))
 import System.Log.FastLogger (ToLogStr(toLogStr))
 
 class Monad m => Logger m where
-  debug :: Text -> m ()
-  info :: Text -> m ()
-  warn :: Text -> m ()
-  error :: Text -> m ()
+  logMsg :: LogLevel -> Text -> m ()
 
 instance Logger App where
-  debug :: Text -> App ()
-  debug = logMsg Debug
+  logMsg :: LogLevel -> Text -> App ()
+  logMsg lvl msg = do
+    LoggingContext {..} <- asks loggingContext
+    when (level <= lvl) (logger compose)
+      & liftIO
+    where
+      compose time = mconcat
+        [ toLogStr "["
+        , toLogStr time
+        , toLogStr ("] [" <> map toUpper (show lvl) <> "] ")
+        , toLogStr msg
+        , toLogStr "\n"
+        ]
 
-  info :: Text -> App ()
-  info = logMsg Info
+logDebug :: Logger m => Text -> m ()
+logDebug = logMsg Debug
 
-  warn :: Text -> App ()
-  warn = logMsg Warn
+logInfo :: Logger m => Text -> m ()
+logInfo = logMsg Info
 
-  error :: Text -> App ()
-  error = logMsg Error
+logWarn :: Logger m => Text -> m ()
+logWarn = logMsg Warn
 
-logMsg :: LogLevel -> Text -> App ()
-logMsg lvl msg = do
-  LoggingContext{..} <- asks loggingContext
-  when (level <= lvl) (logger compose)
-    & liftIO
-  where
-    compose time = mconcat
-      [ toLogStr "["
-      , toLogStr time
-      , toLogStr ("] [" <> map toUpper (show lvl) <> "] ")
-      , toLogStr msg
-      , toLogStr "\n"
-      ]
+logError :: Logger m => Text -> m ()
+logError = logMsg Error
