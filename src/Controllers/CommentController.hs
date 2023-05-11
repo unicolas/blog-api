@@ -2,6 +2,7 @@
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Controllers.CommentController
   ( getComment
@@ -16,7 +17,8 @@ import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Function ((&))
+import Data.Maybe (isNothing)
 import Data.Time (getCurrentTime)
 import Dto.CommentDto (CommentDto, CommentIdDto(..), NewCommentDto(..))
 import qualified Dto.CommentDto as CommentDto
@@ -28,8 +30,15 @@ import Models.Types.Cursor (Cursor)
 import qualified Models.Types.Cursor as Cursor
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
-import Models.Types.Sorting (Order, Sort, Sorting)
-import qualified Models.Types.Sorting as Sorting
+import Models.Types.Pagination
+  ( Pagination(..)
+  , defaultPagination
+  , withCount
+  , withCursor
+  , withOrder
+  , withSort
+  )
+import Models.Types.Sorting (Order, Sort)
 import qualified RequestContext
 import RequestContext (RequestContext)
 import qualified Servant as Http (NoContent(..))
@@ -90,7 +99,7 @@ getCommentReplies :: (CommentStore m)
 getCommentReplies = getCommentsBy CommentStore.findByComment
 
 getCommentsBy :: CommentStore m
-  => (Id model -> Sorting -> Maybe Cursor -> Int -> m [Entity Comment])
+  => (Id model -> Pagination -> m [Entity Comment])
   -> Id model
   -> Maybe Sort
   -> Maybe Order
@@ -98,14 +107,17 @@ getCommentsBy :: CommentStore m
   -> Maybe Int
   -> m (Page CommentDto)
 getCommentsBy find modelId maybeSort maybeOrder maybeCursor maybePageSize = do
-  let
-    sorting = Sorting.make maybeSort maybeOrder
-    pageSize = fromMaybe Page.defaultPageSize maybePageSize
-  comments <- find modelId sorting maybeCursor (1 + pageSize)
+  comments <- find modelId pagination
   pure $ Page.make
     (CommentDto.fromEntity <$> comments)
-    (Cursor.fromList sorting comments)
-    pageSize
+    (Cursor.fromList (sort, order) comments)
+    (count - 1)
+  where
+    pagination@Pagination {..} = defaultPagination
+      & withSort maybeSort
+      & withOrder maybeOrder
+      & withCursor maybeCursor
+      & withCount (fmap (+1) maybePageSize)
 
 createComment :: (?requestCtx::RequestContext)
   => (MonadIO m, CommentStore m, MonadThrow m)

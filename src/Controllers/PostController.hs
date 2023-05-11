@@ -2,6 +2,7 @@
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Controllers.PostController
   ( getPosts
@@ -14,9 +15,9 @@ import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
-import Data.Maybe (fromMaybe)
+import Data.Function ((&))
 import Data.Time (getCurrentTime)
-import Dto.Page (Page(..), defaultPageSize)
+import Dto.Page (Page(..))
 import qualified Dto.Page as Page
 import Dto.PostDto (NewPostDto, PostDto, PostIdDto(..))
 import qualified Dto.PostDto as PostDto
@@ -25,8 +26,15 @@ import Models.Types.Cursor (Cursor(..))
 import qualified Models.Types.Cursor as Cursor
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
+import Models.Types.Pagination
+  ( Pagination(..)
+  , defaultPagination
+  , withCount
+  , withCursor
+  , withOrder
+  , withSort
+  )
 import Models.Types.Sorting (Order, Sort(..))
-import qualified Models.Types.Sorting as Sorting
 import Models.User (User)
 import qualified RequestContext
 import RequestContext (RequestContext)
@@ -42,15 +50,17 @@ getPosts :: PostStore m
   -> Maybe Int
   -> m (Page PostDto)
 getPosts maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
-  let
-    sorting = Sorting.make maybeSort maybeOrder
-    pageSize = fromMaybe defaultPageSize maybePageSize
-  posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId
-    sorting maybeCursor (1 + pageSize)
+  posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId pagination
   pure $ Page.make
     (PostDto.fromEntity <$> posts)
-    (Cursor.fromList sorting posts)
-    pageSize
+    (Cursor.fromList (sort, order) posts)
+    (count - 1)
+  where
+    pagination@Pagination {..} = defaultPagination
+      & withSort maybeSort
+      & withOrder maybeOrder
+      & withCursor maybeCursor
+      & withCount (fmap (+1) maybePageSize)
 
 getPost :: (MonadThrow m, PostStore m) => Id Post -> m PostDto
 getPost postId = do
