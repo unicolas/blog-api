@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Mocks.PostStore (PostStore(..)) where
 
@@ -9,10 +10,9 @@ import Data.UUID.V4 (nextRandom)
 import Mocks.AppMock (AppMock)
 import qualified Mocks.AppMock as AppMock
 import Models.Post (Post(..))
-import Models.Types.Cursor (Cursor(..))
 import Models.Types.Entity (Entity(Entity))
 import Models.Types.Id (Id(..))
-import Models.Types.Sorting (Sorting)
+import Models.Types.Pagination (Pagination(..))
 import Models.User (User)
 import Stores.PostStore (PostStore(..))
 import Utils (dropEntitiesBefore, sortEntitiesBy)
@@ -21,11 +21,11 @@ instance PostStore AppMock where
   find :: Id Post -> AppMock (Maybe (Entity Post))
   find postId = gets (Map.lookup postId . AppMock.posts)
 
-  findAll :: Sorting -> Maybe Cursor -> Int -> AppMock [Entity Post]
-  findAll sorting maybeCursor n = gets
-    $ take n
-    . dropEntitiesBefore maybeCursor
-    . sortEntitiesBy sorting
+  findAll :: Pagination -> AppMock [Entity Post]
+  findAll Pagination {..} = gets
+    $ take count
+    . dropEntitiesBefore cursor
+    . sortEntitiesBy (sort, order)
     . Map.elems
     . AppMock.posts
 
@@ -41,11 +41,11 @@ instance PostStore AppMock where
     posts <- gets (Map.delete postId . AppMock.posts)
     modify (\s -> s {AppMock.posts = posts})
 
-  findByAuthor :: Id User -> Sorting -> Maybe Cursor -> Int -> AppMock [Entity Post]
-  findByAuthor author sorting maybeCursor n = gets
-    $ take n
-    . dropEntitiesBefore maybeCursor
-    . sortEntitiesBy sorting
+  findByAuthor :: Id User -> Pagination -> AppMock [Entity Post]
+  findByAuthor author Pagination {..} = gets
+    $ take count
+    . dropEntitiesBefore cursor
+    . sortEntitiesBy (sort, order)
     . filter authored
     . Map.elems
     . AppMock.posts
