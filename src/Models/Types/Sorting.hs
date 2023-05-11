@@ -2,10 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Models.Types.Sorting
-  (Sort(..), Sorting, Order(..), make, sortExpression) where
+  (Sort(..), Sorting, Order(..), sortExpression) where
 
-import Control.Arrow ((***))
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Database.PostgreSQL.Simple (Query)
 import qualified Servant
@@ -30,9 +28,6 @@ instance Servant.FromHttpApiData Order where
     "asc" -> Right Asc
     "desc" -> Right Desc
     _ -> Left "Unknown order option"
-
-make :: Maybe Sort -> Maybe Order -> Sorting
-make = curry (fromMaybe CreatedAt *** fromMaybe Desc)
 
 sortExpression :: Sorting -> Query
 sortExpression (sort, order) = mconcat

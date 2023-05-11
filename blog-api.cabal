@@ -45,6 +45,7 @@ library
       Models.Types.Cursor
       Models.Types.Entity
       Models.Types.Id
+      Models.Types.Pagination
       Models.Types.Sorting
       Models.User
       RequestContext
