@@ -128,6 +128,7 @@ test-suite blog-api-test
       Mocks.CommentStore
       Mocks.Logger
       Mocks.PostStore
+      Mocks.TagStore
       Mocks.UserStore
       Utils
       Paths_blog_api

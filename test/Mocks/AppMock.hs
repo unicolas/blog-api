@@ -12,6 +12,7 @@ import Data.Map.Strict (Map)
 import Models.Comment (Comment)
 import Models.Credentials (Credentials)
 import Models.Post (Post)
+import Models.Tag (Tag)
 import Models.Types.Entity (Entity(Entity))
 import Models.Types.Id (Id)
 import Models.User (User)
@@ -21,6 +22,7 @@ data Storage = MakeStorage
   , credentials :: !(Map (Id User) Credentials)
   , posts :: !(Map (Id Post) (Entity Post))
   , comments :: !(Map (Id Comment) (Entity Comment))
+  , tags :: !(Map (Id Post) [Tag])
   }
 
 type AppMock = StateT Storage IO
@@ -34,6 +36,7 @@ emptyStorage = MakeStorage
   , credentials = Map.empty
   , posts = Map.empty
   , comments = Map.empty
+  , tags = Map.empty
   }
 
 storeFromList :: [(Id model, model)] -> Map (Id model) (Entity model)
