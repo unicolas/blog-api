@@ -16,12 +16,17 @@ import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
 import Data.Function ((&))
+import Data.Functor (($>))
+import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import Data.Time (getCurrentTime)
 import Dto.Page (Page(..))
 import qualified Dto.Page as Page
-import Dto.PostDto (NewPostDto, PostDto, PostIdDto(..))
+import Dto.PostDto (NewPostDto(..), PostDto, PostIdDto(..))
 import qualified Dto.PostDto as PostDto
 import Models.Post (Post(..))
+import Models.Tag (Tag(..))
+import Models.Types.Aggregate (Aggregate(..))
 import Models.Types.Cursor (Cursor(..))
 import qualified Models.Types.Cursor as Cursor
 import Models.Types.Entity (Entity(..))
@@ -41,8 +46,10 @@ import RequestContext (RequestContext)
 import qualified Servant as Http (NoContent(..))
 import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
+import qualified Stores.TagStore as TagStore
+import Stores.TagStore (TagStore)
 
-getPosts :: PostStore m
+getPosts :: (PostStore m, TagStore m)
   => Maybe (Id User)
   -> Maybe Sort
   -> Maybe Order
@@ -50,33 +57,36 @@ getPosts :: PostStore m
   -> Maybe Int
   -> m (Page PostDto)
 getPosts maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
-  posts <- maybe PostStore.findAll PostStore.findByAuthor maybeId pagination
-  pure $ Page.make
-    (PostDto.fromEntity <$> posts)
-    (Cursor.fromList (sort, order) posts)
-    (count - 1)
+  posts <- maybe PostStore.findAllWithTags PostStore.findByAuthorWithTags maybeId
+    pagination
+  pure $ Page.make (dtos posts) (nextCursor posts) (count - 1)
   where
     pagination@Pagination {..} = defaultPagination
       & withSort maybeSort
       & withOrder maybeOrder
       & withCursor maybeCursor
       & withCount (fmap (+1) maybePageSize)
+    dtos = fmap PostDto.fromAggregate
+    nextCursor = Cursor.fromList (sort, order) . fmap (\(Aggregate e _) -> e)
 
-getPost :: (MonadThrow m, PostStore m) => Id Post -> m PostDto
+getPost :: (MonadThrow m, PostStore m, TagStore m) => Id Post -> m PostDto
 getPost postId = do
-  maybePost <- PostStore.find postId
-  let maybeDto = PostDto.fromEntity <$> maybePost
+  maybePost <- PostStore.findWithTags postId
+  let maybeDto = PostDto.fromAggregate <$> maybePost
   case maybeDto of
     Just dto -> pure dto
     Nothing -> throwM (Error.notFound "Could not find post with such ID.")
 
-createPost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m, MonadIO m)
+createPost :: (?requestCtx :: RequestContext)
+  => (MonadThrow m, PostStore m, TagStore m, MonadIO m)
   => NewPostDto -> m PostIdDto
 createPost dto = do
   now <- liftIO getCurrentTime
-  let post = PostDto.toPost dto (RequestContext.userId ?requestCtx) now now
+  let
+    post = PostDto.toPost dto (RequestContext.userId ?requestCtx) now now
+    terms = fromMaybe [] (tags dto)
   PostStore.save post >>= \case
-    Just (Id postId) -> pure PostIdDto {postId}
+    Just postId@(Id uuid) -> createTags postId terms $> PostIdDto uuid
     Nothing -> throwM (Error.serverError "Failed to create post.")
 
 deletePost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)
@@ -87,3 +97,6 @@ deletePost postId = PostStore.find postId >>= \case
     when (userId /= RequestContext.userId ?requestCtx) $ throwM Error.forbidden
     PostStore.delete postId
     pure Http.NoContent
+
+createTags :: (TagStore m) => Id Post -> [Text] -> m ()
+createTags postId terms = TagStore.save $ (\term -> Tag {..}) <$> terms

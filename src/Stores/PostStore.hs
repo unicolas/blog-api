@@ -2,7 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Stores.PostStore (PostStore (..), findWithTags) where
+module Stores.PostStore
+  ( PostStore (..)
+  , findWithTags
+  , findAllWithTags
+  , findByAuthorWithTags
+  ) where
 
 import App (App)
 import AppContext (AppContext(..))
@@ -99,3 +104,15 @@ findWithTags :: (PostStore m, TagStore m)
   => Id Post
   -> m (Maybe (Aggregate Post [Tag]))
 findWithTags = aggregateMaybe . (find &&& TagStore.findByPost)
+
+findAllWithTags :: (PostStore m, TagStore m)
+  => Pagination
+  -> m [Aggregate Post [Tag]]
+findAllWithTags pagination = findAll pagination >>= mapM TagStore.addTags
+
+findByAuthorWithTags :: (PostStore m, TagStore m)
+  => Id User
+  -> Pagination
+  -> m [Aggregate Post [Tag]]
+findByAuthorWithTags idAuthor pagination =
+  findByAuthor idAuthor pagination >>= mapM TagStore.addTags

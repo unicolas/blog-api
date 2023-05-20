@@ -7,9 +7,9 @@ module Dto.PostDto
   ( PostDto(..)
   , PostIdDto(..)
   , NewPostDto(..)
-  , fromEntity
   , toPost
   , toPostId
+  , fromAggregate
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
@@ -18,6 +18,8 @@ import Data.Time (UTCTime)
 import Data.UUID (UUID)
 import GHC.Generics (Generic)
 import Models.Post (Post(..))
+import Models.Tag (Tag(..))
+import Models.Types.Aggregate (Aggregate(..))
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
 import Models.User (User)
@@ -29,11 +31,12 @@ data PostDto = PostDto
   , authorId :: !UUID
   , createdAt :: !UTCTime
   , updatedAt :: !UTCTime
+  , tags :: ![Text]
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-fromEntity :: Entity Post -> PostDto
-fromEntity (Entity (Id pid) post) = fromPost post
+fromAggregate :: Aggregate Post [Tag] -> PostDto
+fromAggregate (Aggregate (Entity (Id pid) post) tags) = fromPost post
   where
     fromPost
       Post
@@ -43,6 +46,7 @@ fromEntity (Entity (Id pid) post) = fromPost post
       = PostDto
         { postId = pid
         , authorId = aid
+        , tags = term <$> tags
         , ..
         }
 
@@ -56,8 +60,9 @@ toPostId PostIdDto{..} = Id postId
 data NewPostDto = NewPostDto
   { title :: !Text
   , content :: !Text
+  , tags :: !(Maybe [Text])
   }
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  deriving (Show, Eq, Generic, FromJSON)
 
 toPost :: NewPostDto -> Id User -> UTCTime -> UTCTime -> Post
 toPost NewPostDto {..} userId createdAt updatedAt = Post {..}
