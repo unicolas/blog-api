@@ -99,4 +99,4 @@ deletePost postId = PostStore.find postId >>= \case
     pure Http.NoContent
 
 createTags :: (TagStore m) => Id Post -> [Text] -> m ()
-createTags postId terms = TagStore.save $ (\term -> Tag {..}) <$> terms
+createTags postId = TagStore.save . fmap (\term -> Tag {..})
