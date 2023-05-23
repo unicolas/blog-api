@@ -17,6 +17,7 @@ import qualified Dto.PostDto as PostIdDto (toPostId)
 import Mocks.AppMock (runMock)
 import qualified Mocks.AppMock as AppMock
 import Mocks.PostStore ()
+import qualified Mocks.TagStore as TagStore ()
 import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import qualified Models.Types.Cursor as Cursor
@@ -31,6 +32,7 @@ import Test.Hspec
   , describe
   , it
   , shouldBe
+  , shouldContain
   , shouldNotBe
   , shouldReturn
   , shouldSatisfy
@@ -71,6 +73,7 @@ spec = do
         newPost = NewPostDto
           { NewPostDto.title = "Title"
           , NewPostDto.content = "Content"
+          , NewPostDto.tags = Just ["Tag1", "Tag2"]
           }
 
       it "Creates the first post" $ do
@@ -91,6 +94,8 @@ spec = do
         PostDto.title post `shouldBe` NewPostDto.title newPost
         PostDto.content post `shouldBe` NewPostDto.content newPost
         PostDto.authorId post `shouldBe` getUuid idUser
+        length (PostDto.tags post) `shouldBe` 2
+        PostDto.tags post `shouldContain` ["Tag1", "Tag2"]
 
   describe "Given a blog with posts" $ do
     let
