@@ -70,12 +70,9 @@ getPosts maybeId maybeSort maybeOrder maybeCursor maybePageSize = do
     nextCursor = Cursor.fromList (sort, order) . fmap (\(Aggregate e _) -> e)
 
 getPost :: (MonadThrow m, PostStore m, TagStore m) => Id Post -> m PostDto
-getPost postId = do
-  maybePost <- PostStore.findWithTags postId
-  let maybeDto = PostDto.fromAggregate <$> maybePost
-  case maybeDto of
-    Just dto -> pure dto
-    Nothing -> throwM (Error.notFound "Could not find post with such ID.")
+getPost postId = PostStore.findWithTags postId >>= \case
+  Just post -> pure (PostDto.fromAggregate post)
+  Nothing -> throwM (Error.notFound "Could not find post with such ID.")
 
 createPost :: (?requestCtx :: RequestContext)
   => (MonadThrow m, PostStore m, TagStore m, MonadIO m)

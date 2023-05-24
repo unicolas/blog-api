@@ -48,11 +48,8 @@ import qualified Stores.PostStore as PostStore
 import Stores.PostStore (PostStore)
 
 getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
-getComment commentId = do
-  maybeComment <- CommentStore.find commentId
-  let maybeDto = CommentDto.fromEntity <$> maybeComment
-  case maybeDto of
-    Just dto -> pure dto
+getComment commentId = CommentStore.find commentId >>= \case
+    Just comment -> pure (CommentDto.fromEntity comment)
     Nothing -> throwM (Error.notFound "Could not find comment with such ID.")
 
 createPostComment :: (?requestCtx :: RequestContext)
