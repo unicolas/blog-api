@@ -30,10 +30,7 @@ instance UserStore App where
   find idUser = do
     pool <- asks (connectionPool . databaseContext)
     users <- Query.fetch
-        [ "SELECT id, username, email, user_id, password"
-        , "FROM users"
-        , "WHERE id = ?"
-        ] [idUser]
+        ["SELECT id, username, email FROM users WHERE id = ?"] [idUser]
       & withResource pool
       & liftIO
     pure (listToMaybe users)
