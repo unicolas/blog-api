@@ -11,9 +11,11 @@ import qualified Controllers.AuthController as AuthController
 import qualified Controllers.CommentController as CommentController
 import qualified Controllers.PostController as PostController
 import qualified Controllers.Types.Error as Error
+import qualified Controllers.UserController as UserController
 import Dto.CommentDto (CommentDto, CommentIdDto, NewCommentDto)
 import Dto.Page (Page)
 import Dto.PostDto (NewPostDto, PostDto, PostIdDto)
+import Dto.UserDto (UserDto)
 import GHC.Generics (Generic)
 import Models.Comment (Comment)
 import Models.Post (Post)
@@ -59,6 +61,9 @@ data SecuredRoutes mode = SecuredRoutes
   , comments :: mode
       :- "comments"
       :> NamedRoutes CommentRoutes
+  , users :: mode
+      :- "users"
+      :> NamedRoutes UserRoutes
   }
   deriving (Generic)
 
@@ -67,6 +72,7 @@ securedHandlers = \case
   Sas.Authenticated user -> SecuredRoutes
     { posts = postHandlers
     , comments = commentHandlers
+    , users = userHandlers
     }
     where ?requestCtx = RequestContext.make user
   _ -> Sas.throwAll Error.unauthorized
@@ -161,3 +167,14 @@ commentHandlers = CommentRoutes
   , getCommentReplies = CommentController.getCommentReplies
   , createCommentReply = CommentController.createCommentReply
   }
+
+newtype UserRoutes mode = UserRoutes
+  { getUser :: mode
+      -- GET /users/:postId
+      :- Capture "userId" (Id User)
+      :> Http.Get Json UserDto
+  }
+  deriving Generic
+
+userHandlers :: UserRoutes (AsServerT App)
+userHandlers = UserRoutes {getUser = UserController.getUser}
