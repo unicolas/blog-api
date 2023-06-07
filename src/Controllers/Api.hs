@@ -170,7 +170,7 @@ commentHandlers = CommentRoutes
 
 newtype UserRoutes mode = UserRoutes
   { getUser :: mode
-      -- GET /users/:postId
+      -- GET /users/:userId
       :- Capture "userId" (Id User)
       :> Http.Get Json UserDto
   }
