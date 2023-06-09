@@ -168,13 +168,20 @@ commentHandlers = CommentRoutes
   , createCommentReply = CommentController.createCommentReply
   }
 
-newtype UserRoutes mode = UserRoutes
+data UserRoutes mode = UserRoutes
   { getUser :: mode
       -- GET /users/:userId
       :- Capture "userId" (Id User)
       :> Http.Get Json UserDto
+  , getCurrent :: mode
+      -- GET /users/current
+      :- "current"
+      :> Http.Get Json UserDto
   }
   deriving Generic
 
-userHandlers :: UserRoutes (AsServerT App)
-userHandlers = UserRoutes {getUser = UserController.getUser}
+userHandlers :: (?requestCtx :: RequestContext) => UserRoutes (AsServerT App)
+userHandlers = UserRoutes
+  { getUser = UserController.getUser
+  , getCurrent = UserController.getCurrentUser
+  }
