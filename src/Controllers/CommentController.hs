@@ -11,6 +11,7 @@ module Controllers.CommentController
   , deleteComment
   , getPostComments
   , getCommentReplies
+  , countComments
   ) where
 
 import Control.Monad (when)
@@ -22,6 +23,7 @@ import Data.Maybe (isNothing)
 import Data.Time (getCurrentTime)
 import Dto.CommentDto (CommentDto, CommentIdDto(..), NewCommentDto(..))
 import qualified Dto.CommentDto as CommentDto
+import Dto.CountDto (CountDto(..))
 import Dto.Page (Page)
 import qualified Dto.Page as Page
 import Models.Comment (Comment(..))
@@ -49,8 +51,8 @@ import Stores.PostStore (PostStore)
 
 getComment :: (MonadThrow m, CommentStore m) => Id Comment -> m CommentDto
 getComment commentId = CommentStore.find commentId >>= \case
-    Just comment -> pure (CommentDto.fromEntity comment)
-    Nothing -> throwM (Error.notFound "Could not find comment with such ID.")
+  Just comment -> pure (CommentDto.fromEntity comment)
+  Nothing -> throwM (Error.notFound "Could not find comment with such ID.")
 
 createPostComment :: (?requestCtx :: RequestContext)
   => (MonadThrow m, CommentStore m, PostStore m, MonadIO m)
@@ -127,3 +129,6 @@ createComment postId maybeParent dto = do
   CommentStore.save comment >>= \case
     Just (Id commentId) -> pure CommentIdDto {commentId}
     Nothing -> throwM (Error.serverError "Failed to create comment.")
+
+countComments :: (CommentStore m) => Id Post -> m CountDto
+countComments postId = CountDto <$> CommentStore.countByPost postId

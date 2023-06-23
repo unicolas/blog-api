@@ -29,6 +29,7 @@ class Monad m => CommentStore m where
   delete :: Id Comment -> m ()
   findByPost :: Id Post -> Pagination -> m [Entity Comment]
   findByComment :: Id Comment -> Pagination -> m [Entity Comment]
+  countByPost :: Id Post -> m Int
 
 instance CommentStore App where
   find :: Id Comment -> App (Maybe (Entity Comment))
@@ -92,3 +93,16 @@ instance CommentStore App where
         ] (idComment, count)
       & withResource pool
       & liftIO
+
+  countByPost :: Id Post -> App Int
+  countByPost idPost = do
+    pool <- asks (connectionPool . databaseContext)
+    count <- Query.fetch
+      [ "SELECT COUNT(*)"
+      , "FROM comments"
+      , "WHERE post_id = ?"
+      , "AND parent_comment_id IS NULL"
+      ] [idPost]
+      & withResource pool
+      & liftIO
+    pure (maybe 0 fromOnly (listToMaybe count))

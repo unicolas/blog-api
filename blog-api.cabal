@@ -35,6 +35,7 @@ library
       Controllers.UserController
       DatabaseContext
       Dto.CommentDto
+      Dto.CountDto
       Dto.Page
       Dto.PostDto
       Dto.UserDto
