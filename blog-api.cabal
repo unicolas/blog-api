@@ -32,10 +32,12 @@ library
       Controllers.CommentController
       Controllers.PostController
       Controllers.Types.Error
+      Controllers.UserController
       DatabaseContext
       Dto.CommentDto
       Dto.Page
       Dto.PostDto
+      Dto.UserDto
       Logger
       LoggingContext
       Models.Comment
@@ -124,6 +126,7 @@ test-suite blog-api-test
       Controllers.AuthControllerSpec
       Controllers.CommentControllerSpec
       Controllers.PostControllerSpec
+      Controllers.UserControllerSpec
       Mocks.AppMock
       Mocks.CommentStore
       Mocks.Logger
