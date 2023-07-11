@@ -13,6 +13,7 @@ import qualified Controllers.PostController as PostController
 import qualified Controllers.Types.Error as Error
 import qualified Controllers.UserController as UserController
 import Dto.CommentDto (CommentDto, CommentIdDto, NewCommentDto)
+import Dto.CountDto (CountDto)
 import Dto.Page (Page)
 import Dto.PostDto (NewPostDto, PostDto, PostIdDto)
 import Dto.UserDto (UserDto)
@@ -118,6 +119,12 @@ data PostRoutes mode = PostRoutes
       :> "comments"
       :> ReqBody Json NewCommentDto
       :> Http.Post Json CommentIdDto
+    , countComments :: mode
+      -- GET /posts/:postId/comments/count
+      :- Capture "postId" (Id Post)
+      :> "comments"
+      :> "count"
+      :> Http.Get Json CountDto
   }
   deriving Generic
 
@@ -130,6 +137,7 @@ postHandlers = PostRoutes
   , deletePost = PostController.deletePost
   , getPostComments = CommentController.getPostComments
   , createPostComment = CommentController.createPostComment
+  , countComments = CommentController.countComments
   }
 
 data CommentRoutes mode = CommentRoutes

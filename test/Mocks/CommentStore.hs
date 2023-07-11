@@ -44,6 +44,16 @@ instance CommentStore AppMock where
   findByComment = findBy
     $ \idComment (Entity _ comment) -> Just idComment == parentId comment
 
+  countByPost :: Id Post -> AppMock Int
+  countByPost idPost = gets
+    $ length
+    . filter topLevelByPost
+    . Map.elems
+    . AppMock.comments
+    where
+      topLevelByPost (Entity _ comment)
+        = idPost == postId comment && isNothing (parentId comment)
+
 findBy :: (Id model -> Entity Comment -> Bool)
   -> Id model
   -> Pagination
