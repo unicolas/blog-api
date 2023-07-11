@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM mcr.microsoft.com/devcontainers/base:bookworm
 
 ENV LANG C.UTF-8
 
@@ -15,17 +15,17 @@ ARG USER_GID=$USER_UID
 RUN apt-get update \
     && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y --no-install-recommends \
-        curl \
-        ca-certificates \
-        dpkg-dev \
-        gcc \
-        libc6-dev \
-        libffi-dev \
-        libgmp-dev \
-        libnuma-dev \
-        libtinfo-dev \
-        zlib1g-dev \
-        libpq-dev \
+    curl \
+    ca-certificates \
+    dpkg-dev \
+    gcc \
+    libc6-dev \
+    libffi-dev \
+    libgmp-dev \
+    libnuma-dev \
+    libtinfo-dev \
+    zlib1g-dev \
+    libpq-dev \
     && /bin/bash -c "$(curl -fsSL "https://raw.githubusercontent.com/microsoft/vscode-dev-containers/v0.245.2/script-library/common-debian.sh")" -- "${INSTALL_ZSH}" "${USERNAME}" "${USER_UID}" "${USER_GID}" "${UPGRADE_PACKAGES}" "true" "true" \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
@@ -38,7 +38,7 @@ RUN mkdir -p "$HOME/.ghcup/bin" \
 ENV PATH="/home/$USERNAME/.cabal/bin:/home/$USERNAME/.ghcup/bin:$PATH"
 
 # [Choice] GHC version: recommended, latest, 9.2, 9.0, 8.10, 8.8, 8.6
-ARG GHC_VERSION="9.2.7"
+ARG GHC_VERSION="9.4.5"
 
 # Use GHCup to install versions of main utilities
 # If you prefer to let the Haskell extension install everything on demand,
