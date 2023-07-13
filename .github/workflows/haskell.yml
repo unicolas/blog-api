@@ -13,7 +13,7 @@ jobs:
 
       - uses: haskell/actions/setup@v2
         with:
-          ghc-version: "9.2.7"
+          ghc-version: "9.4.5"
           enable-stack: true
           stack-version: "2.9.3"
 
