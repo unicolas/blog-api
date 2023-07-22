@@ -1,32 +1,25 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Mocks.UserStore (UserStore(..)) where
+module Mocks.UserStore (UserStore (..)) where
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets, modify)
-import qualified Data.List as List
-import qualified Data.Map.Strict as Map
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
 import Data.Text (Text)
 import Data.UUID.V4 (nextRandom)
 import Mocks.AppMock (AppMock)
-import qualified Mocks.AppMock as AppMock
-import Models.Credentials (Credentials(..))
-import Models.Types.Aggregate (Aggregate(Aggregate))
-import Models.Types.Entity (Entity(Entity))
-import Models.Types.Id (Id(..))
-import Models.User (User(..))
-import Stores.UserStore (UserStore(..))
+import Mocks.AppMock qualified as AppMock
+import Models.Credentials (Credentials (..))
+import Models.Types.Aggregate (Aggregate (Aggregate))
+import Models.Types.Entity (Entity (Entity))
+import Models.Types.Id (Id (..))
+import Models.User (User (..))
+import Stores.UserStore (UserStore (..))
 
 instance UserStore AppMock where
   find :: Id User -> AppMock (Maybe (Entity User))
   find idUser = gets (Map.lookup idUser . AppMock.users)
-
-  save :: User -> AppMock (Maybe (Id User))
-  save user = do
-    idUser <- liftIO (Id <$> nextRandom)
-    users <- gets (Map.insert idUser (Entity idUser user) . AppMock.users)
-    modify (\s -> s {AppMock.users = users})
-    pure $ Just idUser
 
   findWithCredentials :: Text -> AppMock (Maybe (Aggregate User Credentials))
   findWithCredentials aUsername = do
@@ -38,3 +31,18 @@ instance UserStore AppMock where
     where
       withUsername (Entity _ user) = aUsername == username user
       getId (Entity i _) = i
+
+  save :: User -> Text -> AppMock (Maybe (Id User))
+  save user psw = do
+    idUser <- liftIO (Id <$> nextRandom)
+    users <- gets (Map.insert idUser (Entity idUser user) . AppMock.users)
+    credentials <- gets
+      $ Map.insert idUser (Credentials idUser psw) . AppMock.credentials
+    modify (\s -> s {AppMock.users = users, AppMock.credentials = credentials})
+    pure (Just idUser)
+
+  findByUsername :: Text -> AppMock (Maybe (Entity User))
+  findByUsername username' = gets 
+    $ List.find (\(Entity _ user) -> username user == username')
+    . Map.elems
+    . AppMock.users

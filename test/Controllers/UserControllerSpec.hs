@@ -6,7 +6,7 @@ module Controllers.UserControllerSpec (spec) where
 import Controllers.UserController (getUser)
 import qualified Data.Map as Map
 import Data.UUID (nil)
-import qualified Dto.UserDto as UserDto
+import qualified Dto.UserDto as UserDto (UserDto(..))
 import Mocks.AppMock (runMock)
 import qualified Mocks.AppMock as AppMock
 import Mocks.UserStore ()

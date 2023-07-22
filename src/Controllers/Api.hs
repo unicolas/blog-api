@@ -16,7 +16,7 @@ import Dto.CommentDto (CommentDto, CommentIdDto, NewCommentDto)
 import Dto.CountDto (CountDto)
 import Dto.Page (Page)
 import Dto.PostDto (NewPostDto, PostDto, PostIdDto)
-import Dto.UserDto (UserDto)
+import Dto.UserDto (NewUserDto, UserDto, UserIdDto)
 import GHC.Generics (Generic)
 import Models.Comment (Comment)
 import Models.Post (Post)
@@ -42,6 +42,11 @@ data Api mode = Api
       :- "login"
       :> ReqBody Json LoginRequest
       :> Http.Post Json LoginHeaders
+  , signup :: mode
+      -- POST /signup
+      :- "signup"
+      :> ReqBody Json NewUserDto
+      :> Http.Post Json UserIdDto
   , secured :: mode
       :- Sas.Auth Jwt (Entity User)
       :> NamedRoutes SecuredRoutes
@@ -51,6 +56,7 @@ data Api mode = Api
 handlers :: Sas.CookieSettings -> Sas.JWTSettings -> Api (AsServerT App)
 handlers cs jwts = Api
   { login = AuthController.login cs jwts
+  , signup = UserController.createUser
   , secured = securedHandlers
   }
 
