@@ -23,7 +23,6 @@ import qualified Stores.Query as Query
 class Monad m => UserStore m where
   find :: Id User -> m (Maybe (Entity User))
   save :: User -> Text -> m (Maybe (Id User))
-  -- save :: User -> m (Maybe (Id User))
   findWithCredentials :: Text -> m (Maybe (Aggregate User Credentials))
   findByUsername :: Text -> m (Maybe (Entity User))
 
