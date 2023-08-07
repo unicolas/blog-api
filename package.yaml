@@ -80,5 +80,7 @@ tests:
       - blog-api
       - containers
       - hspec
+      - QuickCheck
+      - quickcheck-instances
     build-tools:
       - hspec-discover:hspec-discover

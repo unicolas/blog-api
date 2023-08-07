@@ -5,7 +5,7 @@ module Models.Username (Username(Username), makeUsername) where
 import Control.Category ((>>>))
 import Data.Aeson (FromJSON, parseJSON, withText)
 import Data.Aeson.Types (Parser, Value)
-import Data.Char (isAlpha, isDigit)
+import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -27,6 +27,10 @@ makeUsername text = if valid text
   then Right (MakeUsername text)
   else Left "invalid username"
   where
-    validChar c = isAlpha c || isDigit c || c == '_' || c == '-'
+    validChar c = isAsciiUpper c
+     || isAsciiLower c
+     || isDigit c
+     || c == '_'
+     || c == '-'
     valid = Text.partition validChar
       >>> \(accepted, other) -> (Text.length accepted > 3) && Text.null other
