@@ -1,15 +1,14 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Models.UsernameSpec (spec) where
 
 import Data.Either (isLeft)
 import Data.Text (pack)
+import Generators (listOfN)
 import Models.Username (Username(Username), makeUsername)
 import Test.Hspec (Spec, describe, it, shouldSatisfy)
 import Test.Hspec.QuickCheck (prop)
-import Test.QuickCheck
-  (Gen, arbitrary, chooseInt, forAll, shuffle, sized, suchThat, vectorOf)
+import Test.QuickCheck (arbitrary, forAll, listOf, shuffle, suchThat)
 import Test.QuickCheck.Instances.Text ()
 
 spec :: Spec
@@ -25,17 +24,10 @@ spec = do
       makeUsername "" `shouldSatisfy` isLeft
 
   where
-    wraps x = \case
-      Right (Username u) -> u == x
-      Left _ -> False
+    wraps x = either (const False) (\(Username u) -> u == x)
     isValid = (`elem` ['A'..'Z'] <> ['a'..'z'] <> ['0'..'9'] <> ['-','_'])
-    username = pack <$> listN 4 (arbitrary `suchThat` isValid)
+    username = pack <$> listOfN 4 (arbitrary `suchThat` isValid)
     invalidUsername = pack <$> do
       invalid <- arbitrary `suchThat` (not . isValid)
-      validList <- listN 0 (arbitrary `suchThat` isValid)
+      validList <- listOf (arbitrary `suchThat` isValid)
       shuffle (invalid : validList)
-
-listN :: Int -> Gen Char -> Gen [Char]
-listN n gen = sized $ \m -> do
-  k <- chooseInt (n, max n m)
-  vectorOf k gen
