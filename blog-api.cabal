@@ -136,6 +136,7 @@ test-suite blog-api-test
       Mocks.PostStore
       Mocks.TagStore
       Mocks.UserStore
+      Models.EmailSpec
       Models.PasswordSpec
       Models.UsernameSpec
       Utils
