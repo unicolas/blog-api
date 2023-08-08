@@ -29,9 +29,10 @@ makePassword = fmap MakePassword . (validateLength >=> validateGroups)
     validateLength pswd = if Text.length pswd > 5
       then Right pswd
       else Left "password length is less than 6 chars"
-    validateGroups pswd = if not (emptyGroups pswd)
+    validateGroups pswd = if validAscii pswd && not (emptyGroups pswd)
       then Right pswd
       else Left "invalid password"
+    validAscii = Text.all (\c -> c >= '!' && c <= '~')
     emptyGroups = Text.partition isAlpha
       >>> second (Text.partition isDigit)
       >>> \(alpha, (digit, other)) -> any Text.null [alpha, digit, other]

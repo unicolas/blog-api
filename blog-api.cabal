@@ -129,12 +129,14 @@ test-suite blog-api-test
       Controllers.CommentControllerSpec
       Controllers.PostControllerSpec
       Controllers.UserControllerSpec
+      Generators
       Mocks.AppMock
       Mocks.CommentStore
       Mocks.Logger
       Mocks.PostStore
       Mocks.TagStore
       Mocks.UserStore
+      Models.PasswordSpec
       Models.UsernameSpec
       Utils
       Paths_blog_api
