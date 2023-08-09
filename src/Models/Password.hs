@@ -1,6 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 
-module Models.Password (Password(Password), makePassword) where
+module Models.Password (Password(Password), makePassword, unsafePassword) where
 
 import Control.Arrow (second, (>>>))
 import Control.Monad ((>=>))
@@ -36,3 +36,6 @@ makePassword = fmap MakePassword . (validateLength >=> validateGroups)
     emptyGroups = Text.partition isAlpha
       >>> second (Text.partition isDigit)
       >>> \(alpha, (digit, other)) -> any Text.null [alpha, digit, other]
+
+unsafePassword :: Text -> Password
+unsafePassword = MakePassword

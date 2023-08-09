@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Mocks.UserStore (UserStore (..)) where
+module Mocks.UserStore (UserStore(..)) where
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets, modify)

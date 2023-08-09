@@ -1,6 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 
-module Models.Email (Email(Email), makeEmail) where
+module Models.Email (Email(Email), makeEmail, unsafeEmail) where
 
 import Control.Arrow (second, (>>>))
 import Data.Aeson (FromJSON, parseJSON, withText)
@@ -28,3 +28,5 @@ makeEmail text = if valid text then Right (MakeEmail text) else Left "invalid em
       >>> second (Text.break (== '.'))
       >>> \(a, (b, c)) -> (Text.length a > 1) && all (> 2) (Text.length <$> [b, c])
 
+unsafeEmail :: Text -> Email
+unsafeEmail = MakeEmail

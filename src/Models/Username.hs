@@ -1,6 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 
-module Models.Username (Username(Username), makeUsername) where
+module Models.Username (Username(Username), makeUsername, unsafeUsername) where
 
 import Control.Category ((>>>))
 import Data.Aeson (FromJSON, parseJSON, withText)
@@ -34,3 +34,6 @@ makeUsername text = if valid text
      || c == '-'
     valid = Text.partition validChar
       >>> \(accepted, other) -> (Text.length accepted > 3) && Text.null other
+
+unsafeUsername :: Text -> Username
+unsafeUsername = MakeUsername
