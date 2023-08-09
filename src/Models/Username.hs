@@ -18,7 +18,7 @@ pattern Username e <- MakeUsername e
 
 instance FromJSON Username where
   parseJSON :: Value -> Parser Username
-  parseJSON = withText "Username" $ \text -> either fail pure (makeUsername text)
+  parseJSON = withText "Username" (either fail pure . makeUsername)
 
 -- | Parses a username that is 4 or more characters long and it's made of letters,
 -- digits and '_' or '-'.

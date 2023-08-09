@@ -19,7 +19,7 @@ pattern Password e <- MakePassword e
 
 instance FromJSON Password where
   parseJSON :: Value -> Parser Password
-  parseJSON = withText "Password" $ \text -> either fail pure (makePassword text)
+  parseJSON = withText "Password" (either fail pure . makePassword)
 
 -- | Parses a password that is 6 or more characters long and contains at least
 -- one letter, one digit and one symbol.

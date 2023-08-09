@@ -17,7 +17,7 @@ pattern Email e <- MakeEmail e
 
 instance FromJSON Email where
   parseJSON :: Value -> Parser Email
-  parseJSON = withText "Email" $ \text -> either fail pure (makeEmail text)
+  parseJSON = withText "Email" (either fail pure . makeEmail)
 
 -- | Parses an email of the form x@y.z where all three x, y and z are at least 2
 -- characters long.
