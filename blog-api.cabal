@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -42,6 +42,8 @@ library
       LoggingContext
       Models.Comment
       Models.Credentials
+      Models.Email
+      Models.Password
       Models.Post
       Models.Tag
       Models.Types.Aggregate
@@ -51,6 +53,7 @@ library
       Models.Types.Pagination
       Models.Types.Sorting
       Models.User
+      Models.Username
       RequestContext
       Stores.CommentStore
       Stores.PostStore
@@ -126,12 +129,16 @@ test-suite blog-api-test
       Controllers.CommentControllerSpec
       Controllers.PostControllerSpec
       Controllers.UserControllerSpec
+      Generators
       Mocks.AppMock
       Mocks.CommentStore
       Mocks.Logger
       Mocks.PostStore
       Mocks.TagStore
       Mocks.UserStore
+      Models.EmailSpec
+      Models.PasswordSpec
+      Models.UsernameSpec
       Utils
       Paths_blog_api
   hs-source-dirs:
@@ -140,7 +147,8 @@ test-suite blog-api-test
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
-      aeson
+      QuickCheck
+    , aeson
     , base >=4.7 && <5
     , base64
     , blog-api
@@ -153,6 +161,7 @@ test-suite blog-api-test
     , mtl
     , password
     , postgresql-simple
+    , quickcheck-instances
     , resource-pool
     , servant
     , servant-auth-server

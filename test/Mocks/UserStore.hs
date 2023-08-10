@@ -21,13 +21,6 @@ instance UserStore AppMock where
   find :: Id User -> AppMock (Maybe (Entity User))
   find idUser = gets (Map.lookup idUser . AppMock.users)
 
-  save :: User -> AppMock (Maybe (Id User))
-  save user = do
-    idUser <- liftIO (Id <$> nextRandom)
-    users <- gets (Map.insert idUser (Entity idUser user) . AppMock.users)
-    modify (\s -> s {AppMock.users = users})
-    pure $ Just idUser
-
   findWithCredentials :: Text -> AppMock (Maybe (Aggregate User Credentials))
   findWithCredentials aUsername = do
     maybeUser <- gets (List.find withUsername . Map.elems . AppMock.users)
@@ -38,3 +31,18 @@ instance UserStore AppMock where
     where
       withUsername (Entity _ user) = aUsername == username user
       getId (Entity i _) = i
+
+  save :: User -> Text -> AppMock (Maybe (Id User))
+  save user psw = do
+    idUser <- liftIO (Id <$> nextRandom)
+    users <- gets (Map.insert idUser (Entity idUser user) . AppMock.users)
+    credentials <- gets
+      $ Map.insert idUser (Credentials idUser psw) . AppMock.credentials
+    modify (\s -> s {AppMock.users = users, AppMock.credentials = credentials})
+    pure (Just idUser)
+
+  findByUsername :: Text -> AppMock (Maybe (Entity User))
+  findByUsername username' = gets
+    $ List.find (\(Entity _ user) -> username user == username')
+    . Map.elems
+    . AppMock.users

@@ -22,8 +22,9 @@ import qualified Stores.Query as Query
 
 class Monad m => UserStore m where
   find :: Id User -> m (Maybe (Entity User))
-  save :: User -> m (Maybe (Id User))
+  save :: User -> Text -> m (Maybe (Id User))
   findWithCredentials :: Text -> m (Maybe (Aggregate User Credentials))
+  findByUsername :: Text -> m (Maybe (Entity User))
 
 instance UserStore App where
   find :: Id User -> App (Maybe (Entity User))
@@ -35,14 +36,18 @@ instance UserStore App where
       & liftIO
     pure (listToMaybe users)
 
-  save :: User -> App (Maybe (Id User))
-  save user = do
+  save :: User -> Text -> App (Maybe (Id User))
+  save user psw = do
     pool <- asks (connectionPool . databaseContext)
     ids <- Query.fetch
-        [ "INSERT INTO users (id, username, email)"
-        , "VALUES (gen_random_uuid(), ?, ?)"
-        , "RETURNING id"
-        ] (username user, email user)
+        [ "WITH newUser AS ("
+        , "  INSERT INTO users (id, username, email)"
+        , "  VALUES (gen_random_uuid(), ?, ?)"
+        , "  RETURNING id )"
+        , "INSERT INTO user_credentials"
+        , "VALUES ((SELECT id AS user_id FROM newUser), ?)"
+        , "RETURNING user_id"
+        ] (username user, email user, psw)
       & withResource pool
       & liftIO
     pure (fromOnly <$> listToMaybe ids)
@@ -56,6 +61,15 @@ instance UserStore App where
         , "INNER JOIN user_credentials ON id = user_id"
         , "WHERE username = ?"
         ] [aUsername]
+      & withResource pool
+      & liftIO
+    pure (listToMaybe users)
+
+  findByUsername :: Text -> App (Maybe (Entity User))
+  findByUsername aUsername = do
+    pool <- asks (connectionPool . databaseContext)
+    users <- Query.fetch
+        ["SELECT id, username, email FROM users WHERE username = ?"] [aUsername]
       & withResource pool
       & liftIO
     pure (listToMaybe users)
