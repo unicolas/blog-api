@@ -16,6 +16,7 @@ import Models.Types.Entity (Entity(Entity))
 import Models.Types.Id (Id(..))
 import Models.User (User(..))
 import Stores.UserStore (UserStore(..))
+import Models.Username (Username(Username))
 
 instance UserStore AppMock where
   find :: Id User -> AppMock (Maybe (Entity User))
@@ -29,8 +30,9 @@ instance UserStore AppMock where
       Just user -> gets (Map.lookup (getId user) . AppMock.credentials)
     pure (Aggregate <$> maybeUser <*> maybeCreds)
     where
-      withUsername (Entity _ user) = aUsername == username user
+      withUsername (Entity _ user) = aUsername == getUsername user
       getId (Entity i _) = i
+      getUsername (User {username = (Username u)}) = u
 
   save :: User -> Text -> AppMock (Maybe (Id User))
   save user psw = do
@@ -41,7 +43,7 @@ instance UserStore AppMock where
     modify (\s -> s {AppMock.users = users, AppMock.credentials = credentials})
     pure (Just idUser)
 
-  findByUsername :: Text -> AppMock (Maybe (Entity User))
+  findByUsername :: Username -> AppMock (Maybe (Entity User))
   findByUsername username' = gets
     $ List.find (\(Entity _ user) -> username user == username')
     . Map.elems

@@ -18,13 +18,14 @@ import Models.Types.Aggregate (Aggregate)
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
 import Models.User (User(..))
+import Models.Username (Username)
 import qualified Stores.Query as Query
 
 class Monad m => UserStore m where
   find :: Id User -> m (Maybe (Entity User))
   save :: User -> Text -> m (Maybe (Id User))
   findWithCredentials :: Text -> m (Maybe (Aggregate User Credentials))
-  findByUsername :: Text -> m (Maybe (Entity User))
+  findByUsername :: Username -> m (Maybe (Entity User))
 
 instance UserStore App where
   find :: Id User -> App (Maybe (Entity User))
@@ -65,7 +66,7 @@ instance UserStore App where
       & liftIO
     pure (listToMaybe users)
 
-  findByUsername :: Text -> App (Maybe (Entity User))
+  findByUsername :: Username -> App (Maybe (Entity User))
   findByUsername aUsername = do
     pool <- asks (connectionPool . databaseContext)
     users <- Query.fetch

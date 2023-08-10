@@ -29,6 +29,8 @@ import Test.Hspec
   , shouldThrow
   )
 import Utils (makeId)
+import Models.Username (unsafeUsername)
+import Models.Email (unsafeEmail)
 
 spec :: Spec
 spec = do
@@ -36,8 +38,8 @@ spec = do
     let
       aUserId = makeId "cb97ab07-8785-4f03-9ead-a2178c680ec2"
       aUser = User
-        { User.username = "username"
-        , User.email = "name@mail.com"
+        { User.username = unsafeUsername "username"
+        , User.email = unsafeEmail "name@mail.com"
         }
       users = Map.fromList [(aUserId, Entity aUserId aUser)]
       userPsw = "$2b$10$7gx1uWCIGJHmLpQAXqYoQOVSJqkfDAOrdvZsJpuBiZtdpcCVy4ClG"
