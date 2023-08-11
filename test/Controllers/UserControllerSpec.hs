@@ -56,7 +56,7 @@ spec = do
             , NewUserDto.email = unsafeEmail "new_u@mail.com"
             , NewUserDto.password = unsafePassword "abc123$"
             }
-          createThenGet = createUser newUser >>= getUser . Id . UserIdDto.userId
+          createThenGet = createUser newUser >>= getUser . UserIdDto.userId
         user <- runMock createThenGet givenUsers
         UserDto.username user `shouldBe` NewUserDto.username newUser
         UserDto.email user `shouldBe` NewUserDto.email newUser

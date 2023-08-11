@@ -32,6 +32,6 @@ createUser NewUserDto {..} = UserStore.findByUsername username >>= \case
   Nothing -> do
     hashed <- hashPassword password
     UserStore.save (User username email) hashed >>= \case
-      Just (Id userId) -> pure (UserIdDto userId)
+      Just userId -> pure (UserIdDto userId)
       Nothing -> throwM (Error.serverError "Failed to create user.")
   Just _ -> throwM (Error.badRequest "Username already in use.")
