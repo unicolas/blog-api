@@ -10,7 +10,6 @@ import Control.Monad.Reader (asks)
 import Data.Function ((&))
 import Data.Maybe (listToMaybe)
 import Data.Pool (withResource)
-import Data.Text (Text)
 import Database.PostgreSQL.Simple (fromOnly)
 import DatabaseContext (DatabaseContext(..))
 import Models.Credentials (Credentials)
@@ -25,7 +24,7 @@ import qualified Stores.Query as Query
 class Monad m => UserStore m where
   find :: Id User -> m (Maybe (Entity User))
   save :: User -> HashedPassword -> m (Maybe (Id User))
-  findWithCredentials :: Text -> m (Maybe (Aggregate User Credentials))
+  findWithCredentials :: Username -> m (Maybe (Aggregate User Credentials))
   findByUsername :: Username -> m (Maybe (Entity User))
 
 instance UserStore App where
@@ -54,7 +53,7 @@ instance UserStore App where
       & liftIO
     pure (fromOnly <$> listToMaybe ids)
 
-  findWithCredentials :: Text -> App (Maybe (Aggregate User Credentials))
+  findWithCredentials :: Username -> App (Maybe (Aggregate User Credentials))
   findWithCredentials aUsername = do
     pool <- asks (connectionPool . databaseContext)
     users <- Query.fetch

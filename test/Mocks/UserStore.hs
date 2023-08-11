@@ -23,17 +23,16 @@ instance UserStore AppMock where
   find :: Id User -> AppMock (Maybe (Entity User))
   find idUser = gets (Map.lookup idUser . AppMock.users)
 
-  findWithCredentials :: Text -> AppMock (Maybe (Aggregate User Credentials))
-  findWithCredentials aUsername = do
+  findWithCredentials :: Username -> AppMock (Maybe (Aggregate User Credentials))
+  findWithCredentials username' = do
     maybeUser <- gets (List.find withUsername . Map.elems . AppMock.users)
     maybeCreds <- case maybeUser of
       Nothing -> pure Nothing
       Just user -> gets (Map.lookup (getId user) . AppMock.credentials)
     pure (Aggregate <$> maybeUser <*> maybeCreds)
     where
-      withUsername (Entity _ user) = aUsername == getUsername user
+      withUsername (Entity _ user) = username' == username user
       getId (Entity i _) = i
-      getUsername (User {username = (Username u)}) = u
 
   save :: User -> HashedPassword -> AppMock (Maybe (Id User))
   save user pswd = do
