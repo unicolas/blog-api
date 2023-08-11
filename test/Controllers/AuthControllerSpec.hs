@@ -12,9 +12,12 @@ import qualified Mocks.AppMock as AppMock
 import Mocks.UserStore ()
 import Models.Credentials (Credentials(Credentials))
 import qualified Models.Credentials as Credentials
+import Models.Email (unsafeEmail)
+import Models.HashedPassword (unsafeHashedPassword)
 import Models.Types.Entity (Entity(..))
 import Models.User (User(..))
 import qualified Models.User as User
+import Models.Username (unsafeUsername)
 import qualified Servant as Http (getHeaders)
 import qualified Servant.Auth.Server as Sas
 import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
@@ -29,8 +32,6 @@ import Test.Hspec
   , shouldThrow
   )
 import Utils (makeId)
-import Models.Username (unsafeUsername)
-import Models.Email (unsafeEmail)
 
 spec :: Spec
 spec = do
@@ -45,7 +46,7 @@ spec = do
       userPsw = "$2b$10$7gx1uWCIGJHmLpQAXqYoQOVSJqkfDAOrdvZsJpuBiZtdpcCVy4ClG"
       someCreds = Credentials
         { Credentials.userId = aUserId
-        , Credentials.password = userPsw
+        , Credentials.password = unsafeHashedPassword userPsw
         }
       credentials = Map.fromList [(aUserId, someCreds)]
       givenUsers = AppMock.emptyStorage

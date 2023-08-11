@@ -14,6 +14,7 @@ import Data.Text (Text)
 import Database.PostgreSQL.Simple (fromOnly)
 import DatabaseContext (DatabaseContext(..))
 import Models.Credentials (Credentials)
+import Models.HashedPassword (HashedPassword)
 import Models.Types.Aggregate (Aggregate)
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
@@ -23,7 +24,7 @@ import qualified Stores.Query as Query
 
 class Monad m => UserStore m where
   find :: Id User -> m (Maybe (Entity User))
-  save :: User -> Text -> m (Maybe (Id User))
+  save :: User -> HashedPassword -> m (Maybe (Id User))
   findWithCredentials :: Text -> m (Maybe (Aggregate User Credentials))
   findByUsername :: Username -> m (Maybe (Entity User))
 
@@ -37,7 +38,7 @@ instance UserStore App where
       & liftIO
     pure (listToMaybe users)
 
-  save :: User -> Text -> App (Maybe (Id User))
+  save :: User -> HashedPassword -> App (Maybe (Id User))
   save user psw = do
     pool <- asks (connectionPool . databaseContext)
     ids <- Query.fetch

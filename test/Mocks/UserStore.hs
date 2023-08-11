@@ -11,12 +11,13 @@ import Data.UUID.V4 (nextRandom)
 import Mocks.AppMock (AppMock)
 import qualified Mocks.AppMock as AppMock
 import Models.Credentials (Credentials(..))
+import Models.HashedPassword (HashedPassword)
 import Models.Types.Aggregate (Aggregate(Aggregate))
 import Models.Types.Entity (Entity(Entity))
 import Models.Types.Id (Id(..))
 import Models.User (User(..))
-import Stores.UserStore (UserStore(..))
 import Models.Username (Username(Username))
+import Stores.UserStore (UserStore(..))
 
 instance UserStore AppMock where
   find :: Id User -> AppMock (Maybe (Entity User))
@@ -34,12 +35,12 @@ instance UserStore AppMock where
       getId (Entity i _) = i
       getUsername (User {username = (Username u)}) = u
 
-  save :: User -> Text -> AppMock (Maybe (Id User))
-  save user psw = do
+  save :: User -> HashedPassword -> AppMock (Maybe (Id User))
+  save user pswd = do
     idUser <- liftIO (Id <$> nextRandom)
     users <- gets (Map.insert idUser (Entity idUser user) . AppMock.users)
     credentials <- gets
-      $ Map.insert idUser (Credentials idUser psw) . AppMock.credentials
+      $ Map.insert idUser (Credentials idUser pswd) . AppMock.credentials
     modify (\s -> s {AppMock.users = users, AppMock.credentials = credentials})
     pure (Just idUser)
 

@@ -5,14 +5,12 @@
 
 module Controllers.UserController (getUser, getCurrentUser, createUser) where
 
-import Control.Category ((>>>))
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO)
 import qualified Controllers.Types.Error as Error
-import qualified Data.Password.Bcrypt as Bcrypt
 import Dto.UserDto (NewUserDto(..), UserDto, UserIdDto(..))
 import qualified Dto.UserDto as UserDto
-import Models.Password (Password(..))
+import Models.HashedPassword (hashPassword)
 import Models.Types.Id (Id(..))
 import Models.User (User(..))
 import RequestContext (RequestContext(..))
@@ -32,11 +30,8 @@ getCurrentUser = getUser (RequestContext.userId ?requestCtx)
 createUser :: (MonadThrow m, UserStore m, MonadIO m) => NewUserDto -> m UserIdDto
 createUser NewUserDto {..} = UserStore.findByUsername username >>= \case
   Nothing -> do
-    hashed <- hash pswd
+    hashed <- hashPassword password
     UserStore.save (User username email) hashed >>= \case
       Just (Id userId) -> pure (UserIdDto userId)
       Nothing -> throwM (Error.serverError "Failed to create user.")
   Just _ -> throwM (Error.badRequest "Username already in use.")
-  where
-    (Password pswd) = password
-    hash = Bcrypt.mkPassword >>> Bcrypt.hashPassword >>> fmap Bcrypt.unPasswordHash

@@ -11,8 +11,9 @@ import Data.Aeson (FromJSON)
 import qualified Data.Password.Bcrypt as Bcrypt
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Models.Credentials (Credentials)
+import Models.Credentials (Credentials(..))
 import qualified Models.Credentials as Credentials
+import Models.HashedPassword (HashedPassword(HashedPassword))
 import Models.Types.Aggregate (Aggregate(Aggregate))
 import qualified Servant as Http (Header, Headers, NoContent(..))
 import qualified Servant.Auth.Server as Sas
@@ -47,4 +48,6 @@ login cookieSettings jwtSettings (LoginRequest reqUser reqPassword) = do
 checkPassword :: Text -> Credentials -> Bcrypt.PasswordCheck
 checkPassword plain creds = Bcrypt.checkPassword
   (Bcrypt.mkPassword plain)
-  (Bcrypt.PasswordHash (Credentials.password creds))
+  (Bcrypt.PasswordHash pswd)
+  where
+    HashedPassword pswd = Credentials.password creds
