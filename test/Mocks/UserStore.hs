@@ -6,7 +6,6 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets, modify)
 import qualified Data.List as List
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 import Data.UUID.V4 (nextRandom)
 import Mocks.AppMock (AppMock)
 import qualified Mocks.AppMock as AppMock
@@ -16,7 +15,7 @@ import Models.Types.Aggregate (Aggregate(Aggregate))
 import Models.Types.Entity (Entity(Entity))
 import Models.Types.Id (Id(..))
 import Models.User (User(..))
-import Models.Username (Username(Username))
+import Models.Username (Username)
 import Stores.UserStore (UserStore(..))
 
 instance UserStore AppMock where
