@@ -6,25 +6,24 @@
 module Dto.UserDto (UserDto(..), NewUserDto(..), fromEntity, UserIdDto(..)) where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Text (Text)
-import Data.UUID (UUID)
 import GHC.Generics (Generic)
 import Models.Email (Email)
 import Models.Password (Password)
 import Models.Types.Entity (Entity(..))
-import qualified Models.Types.Id as Id
+import Models.Types.Id (Id)
 import Models.User (User(..))
 import Models.Username (Username)
 
 data UserDto = UserDto
-  { userId :: !UUID
-  , username :: !Text
-  , email :: !Text
+  { userId :: !(Id User)
+  , username :: !Username
+  , email :: !Email
   }
-  deriving (Show, Eq, Generic, ToJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass ToJSON
 
 fromEntity :: Entity User -> UserDto
-fromEntity (Entity userId User {..}) = UserDto {userId = Id.unwrap userId, ..}
+fromEntity (Entity userId User {..}) = UserDto {..}
 
 data NewUserDto = NewUserDto
   { username :: !Username
@@ -34,6 +33,6 @@ data NewUserDto = NewUserDto
   deriving stock (Show, Eq, Generic)
   deriving anyclass FromJSON
 
-newtype UserIdDto = UserIdDto {userId :: UUID}
+newtype UserIdDto = UserIdDto {userId :: Id User}
   deriving stock (Show, Eq, Generic)
   deriving anyclass ToJSON

@@ -43,6 +43,7 @@ library
       Models.Comment
       Models.Credentials
       Models.Email
+      Models.HashedPassword
       Models.Password
       Models.Post
       Models.Tag

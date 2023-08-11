@@ -33,8 +33,8 @@ spec = do
     let
       aUserId = makeId "cb97ab07-8785-4f03-9ead-a2178c680ec2"
       aUser = User
-        { User.username = "username"
-        , User.email = "name@mail.com"
+        { User.username = unsafeUsername "username"
+        , User.email = unsafeEmail "name@mail.com"
         }
       users = Map.fromList [(aUserId, Entity aUserId aUser)]
       givenUsers = AppMock.emptyStorage {AppMock.users = users}
@@ -56,10 +56,10 @@ spec = do
             , NewUserDto.email = unsafeEmail "new_u@mail.com"
             , NewUserDto.password = unsafePassword "abc123$"
             }
-          createThenGet = createUser newUser >>= getUser . Id . UserIdDto.userId
+          createThenGet = createUser newUser >>= getUser . UserIdDto.userId
         user <- runMock createThenGet givenUsers
-        UserDto.username user `shouldBe` "new_user"
-        UserDto.email user `shouldBe` "new_u@mail.com"
+        UserDto.username user `shouldBe` NewUserDto.username newUser
+        UserDto.email user `shouldBe` NewUserDto.email newUser
 
       it "Throws error if username already exists" $ do
         let

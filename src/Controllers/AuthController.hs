@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Controllers.AuthController (LoginHeaders, login, LoginRequest(..)) where
 
@@ -11,9 +12,10 @@ import Data.Aeson (FromJSON)
 import qualified Data.Password.Bcrypt as Bcrypt
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Models.Credentials (Credentials)
-import qualified Models.Credentials as Credentials
+import Models.Credentials (Credentials(..))
+import Models.HashedPassword (HashedPassword(HashedPassword))
 import Models.Types.Aggregate (Aggregate(Aggregate))
+import Models.Username (makeUsername)
 import qualified Servant as Http (Header, Headers, NoContent(..))
 import qualified Servant.Auth.Server as Sas
 import qualified Stores.UserStore as UserStore
@@ -32,19 +34,19 @@ type LoginHeaders = Http.Headers
 
 login :: (MonadThrow m, UserStore m, MonadIO m)
   => Sas.CookieSettings -> Sas.JWTSettings -> LoginRequest -> m LoginHeaders
-login cookieSettings jwtSettings (LoginRequest reqUser reqPassword) = do
-  maybeAggr <- UserStore.findWithCredentials reqUser
+login cookieSettings jwtSettings LoginRequest {..} = do
+  let parsedUsername = maybeRight (makeUsername username)
+  maybeAggr <- maybe (pure Nothing) UserStore.findWithCredentials parsedUsername
   (user, creds) <- case maybeAggr of
     Nothing -> throwM Error.unauthorized
     Just (Aggregate u c) -> pure (u, c)
-  when (Bcrypt.PasswordCheckFail == checkPassword reqPassword creds)
+  when (Bcrypt.PasswordCheckFail == checkPassword password creds)
     $ throwM Error.unauthorized
   maybeCookies <- liftIO (Sas.acceptLogin cookieSettings jwtSettings user)
   case maybeCookies of
     Nothing -> throwM Error.unauthorized
     Just cookies -> pure (cookies Http.NoContent)
-
-checkPassword :: Text -> Credentials -> Bcrypt.PasswordCheck
-checkPassword plain creds = Bcrypt.checkPassword
-  (Bcrypt.mkPassword plain)
-  (Bcrypt.PasswordHash (Credentials.password creds))
+  where
+    maybeRight = either (const Nothing) Just
+    checkPassword plain Credentials {password = HashedPassword pswd} =
+      Bcrypt.checkPassword (Bcrypt.mkPassword plain) (Bcrypt.PasswordHash pswd)

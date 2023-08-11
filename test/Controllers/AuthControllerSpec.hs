@@ -12,9 +12,12 @@ import qualified Mocks.AppMock as AppMock
 import Mocks.UserStore ()
 import Models.Credentials (Credentials(Credentials))
 import qualified Models.Credentials as Credentials
+import Models.Email (unsafeEmail)
+import Models.HashedPassword (unsafeHashedPassword)
 import Models.Types.Entity (Entity(..))
 import Models.User (User(..))
 import qualified Models.User as User
+import Models.Username (unsafeUsername)
 import qualified Servant as Http (getHeaders)
 import qualified Servant.Auth.Server as Sas
 import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
@@ -36,14 +39,14 @@ spec = do
     let
       aUserId = makeId "cb97ab07-8785-4f03-9ead-a2178c680ec2"
       aUser = User
-        { User.username = "username"
-        , User.email = "name@mail.com"
+        { User.username = unsafeUsername "username"
+        , User.email = unsafeEmail "name@mail.com"
         }
       users = Map.fromList [(aUserId, Entity aUserId aUser)]
       userPsw = "$2b$10$7gx1uWCIGJHmLpQAXqYoQOVSJqkfDAOrdvZsJpuBiZtdpcCVy4ClG"
       someCreds = Credentials
         { Credentials.userId = aUserId
-        , Credentials.password = userPsw
+        , Credentials.password = unsafeHashedPassword userPsw
         }
       credentials = Map.fromList [(aUserId, someCreds)]
       givenUsers = AppMock.emptyStorage

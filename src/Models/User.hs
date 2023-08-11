@@ -1,26 +1,18 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module Models.User (User(..)) where
 
-import Data.Aeson (FromJSON)
-import Data.Aeson.Types (ToJSON)
-import Data.Text (Text)
+import Data.Aeson (FromJSON, ToJSON)
 import Database.PostgreSQL.Simple (FromRow, ToRow)
 import GHC.Generics (Generic)
+import Models.Email (Email)
+import Models.Username (Username)
 import Servant.Auth.Server (FromJWT, ToJWT)
 
 data User = User
-  { username :: !Text
-  , email:: !Text
+  { username :: !Username
+  , email:: !Email
   }
-  deriving
-    ( Show
-    , Eq
-    , Generic
-    , FromRow
-    , ToRow
-    , FromJSON
-    , ToJSON
-    , FromJWT
-    , ToJWT
-    )
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (FromRow, ToRow, FromJSON, ToJSON, FromJWT, ToJWT)

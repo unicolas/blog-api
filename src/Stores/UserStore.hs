@@ -10,21 +10,22 @@ import Control.Monad.Reader (asks)
 import Data.Function ((&))
 import Data.Maybe (listToMaybe)
 import Data.Pool (withResource)
-import Data.Text (Text)
 import Database.PostgreSQL.Simple (fromOnly)
 import DatabaseContext (DatabaseContext(..))
 import Models.Credentials (Credentials)
+import Models.HashedPassword (HashedPassword)
 import Models.Types.Aggregate (Aggregate)
 import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
 import Models.User (User(..))
+import Models.Username (Username)
 import qualified Stores.Query as Query
 
 class Monad m => UserStore m where
   find :: Id User -> m (Maybe (Entity User))
-  save :: User -> Text -> m (Maybe (Id User))
-  findWithCredentials :: Text -> m (Maybe (Aggregate User Credentials))
-  findByUsername :: Text -> m (Maybe (Entity User))
+  save :: User -> HashedPassword -> m (Maybe (Id User))
+  findWithCredentials :: Username -> m (Maybe (Aggregate User Credentials))
+  findByUsername :: Username -> m (Maybe (Entity User))
 
 instance UserStore App where
   find :: Id User -> App (Maybe (Entity User))
@@ -36,7 +37,7 @@ instance UserStore App where
       & liftIO
     pure (listToMaybe users)
 
-  save :: User -> Text -> App (Maybe (Id User))
+  save :: User -> HashedPassword -> App (Maybe (Id User))
   save user psw = do
     pool <- asks (connectionPool . databaseContext)
     ids <- Query.fetch
@@ -52,7 +53,7 @@ instance UserStore App where
       & liftIO
     pure (fromOnly <$> listToMaybe ids)
 
-  findWithCredentials :: Text -> App (Maybe (Aggregate User Credentials))
+  findWithCredentials :: Username -> App (Maybe (Aggregate User Credentials))
   findWithCredentials aUsername = do
     pool <- asks (connectionPool . databaseContext)
     users <- Query.fetch
@@ -65,7 +66,7 @@ instance UserStore App where
       & liftIO
     pure (listToMaybe users)
 
-  findByUsername :: Text -> App (Maybe (Entity User))
+  findByUsername :: Username -> App (Maybe (Entity User))
   findByUsername aUsername = do
     pool <- asks (connectionPool . databaseContext)
     users <- Query.fetch
