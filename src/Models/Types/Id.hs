@@ -1,30 +1,27 @@
 {-# LANGUAGE DerivingStrategies #-}
 
-module Models.Types.Id (Id(..), unwrap) where
+module Models.Types.Id (Id(..)) where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
 import Data.UUID (UUID)
-import qualified Database.PostgreSQL.Simple.FromField as Postgres
-import qualified Database.PostgreSQL.Simple.ToField as Postgres
+import Database.PostgreSQL.Simple.FromField (FieldParser, FromField, fromField)
+import Database.PostgreSQL.Simple.ToField (Action, ToField, toField)
 import GHC.Generics (Generic)
-import qualified Servant
+import Servant (FromHttpApiData, parseUrlPiece)
 
 newtype Id phantom = Id UUID
   deriving stock (Show, Read, Eq, Ord, Generic)
   deriving newtype (FromJSON, ToJSON)
 
-instance Servant.FromHttpApiData (Id phantom) where
+instance FromHttpApiData (Id phantom) where
   parseUrlPiece :: Text -> Either Text (Id phantom)
-  parseUrlPiece t = Id <$> Servant.parseUrlPiece t
+  parseUrlPiece t = Id <$> parseUrlPiece t
 
-instance Postgres.ToField (Id phantom) where
-  toField :: Id phantom -> Postgres.Action
-  toField (Id value) = Postgres.toField value
+instance ToField (Id phantom) where
+  toField :: Id phantom -> Action
+  toField (Id value) = toField value
 
-instance Postgres.FromField (Id phantom) where
-  fromField :: Postgres.FieldParser (Id phantom)
-  fromField f s = Id <$> Postgres.fromField f s
-
-unwrap :: Id phantom -> UUID
-unwrap (Id uuid) = uuid
+instance FromField (Id phantom) where
+  fromField :: FieldParser (Id phantom)
+  fromField f s = Id <$> fromField f s

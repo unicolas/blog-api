@@ -13,7 +13,7 @@ import qualified Dto.Page as Page
 import Dto.PostDto (NewPostDto(NewPostDto))
 import qualified Dto.PostDto as NewPostDto (NewPostDto(..))
 import qualified Dto.PostDto as PostDto (PostDto(..))
-import qualified Dto.PostDto as PostIdDto (toPostId)
+import qualified Dto.PostDto as PostIdDto (PostIdDto(..))
 import Mocks.AppMock (runMock)
 import qualified Mocks.AppMock as AppMock
 import Mocks.PostStore ()
@@ -38,7 +38,7 @@ import Test.Hspec
   , shouldSatisfy
   , shouldThrow
   )
-import Utils (emptyPage, getUuid, makeId, makeUtc, serverError)
+import Utils (emptyPage, makeId, makeUtc, serverError)
 
 spec :: Spec
 spec = do
@@ -89,11 +89,11 @@ spec = do
 
       it "Finds the post" $ do
         post <- runMock
-          (createPost newPost >>= getPost . PostIdDto.toPostId)
+          (createPost newPost >>= getPost . PostIdDto.postId)
           noPosts
         PostDto.title post `shouldBe` NewPostDto.title newPost
         PostDto.content post `shouldBe` NewPostDto.content newPost
-        PostDto.authorId post `shouldBe` getUuid idUser
+        PostDto.authorId post `shouldBe` idUser
         length (PostDto.tags post) `shouldBe` 2
         PostDto.tags post `shouldContain` ["Tag1", "Tag2"]
 
@@ -172,7 +172,7 @@ spec = do
           defaultPageSize
       authoredPosts <- runMock (Page.content <$> getByAuthor) givenPosts
       length authoredPosts `shouldBe` 1
-      authoredPosts `shouldSatisfy` all ((== sndUser) . Id . PostDto.authorId)
+      authoredPosts `shouldSatisfy` all ((== sndUser) . PostDto.authorId)
 
     context "When paging by 2" $ do
       let getAll = getPosts anyUser sortTitle orderDesc fromFirst (Just 2)

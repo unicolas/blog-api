@@ -9,61 +9,44 @@ module Dto.CommentDto
   , NewCommentDto(..)
   , fromEntity
   , toComment
-  , toCommentId
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
 import Data.Time (UTCTime)
-import Data.UUID (UUID)
 import GHC.Generics (Generic)
 import Models.Comment (Comment(..))
 import Models.Post (Post)
 import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id(..))
-import qualified Models.Types.Id as Id
 import Models.User (User)
 
 data CommentDto = CommentDto
-  { commentId :: !UUID
+  { commentId :: !(Id Comment)
   , title :: !Text
   , content :: !Text
   , createdAt :: !UTCTime
   , updatedAt :: !UTCTime
-  , postId :: !UUID
-  , authorId :: !UUID
-  , parentId :: !(Maybe UUID)
+  , postId :: !(Id Post)
+  , authorId :: !(Id User)
+  , parentId :: !(Maybe (Id Comment))
   }
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
-
-fromEntity :: Entity Comment -> CommentDto
-fromEntity (Entity commentId comment) = fromComment comment
-  where
-    fromComment
-      Comment
-        { userId
-        , ..
-        }
-      = CommentDto
-        { commentId = Id.unwrap commentId
-        , postId = Id.unwrap postId
-        , authorId = Id.unwrap userId
-        , parentId = Id.unwrap <$> parentId
-        , ..
-        }
-
-newtype CommentIdDto = CommentIdDto {commentId :: UUID}
   deriving stock (Show, Eq, Generic)
   deriving anyclass ToJSON
 
-toCommentId :: CommentIdDto -> Id Comment
-toCommentId CommentIdDto{..} = Id commentId
+fromEntity :: Entity Comment -> CommentDto
+fromEntity (Entity commentId Comment {userId = authorId, ..}) = CommentDto {..}
+
+newtype CommentIdDto = CommentIdDto {commentId :: Id Comment}
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass ToJSON
 
 data NewCommentDto = NewCommentDto
   { title :: !Text
   , content :: !Text
   }
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass FromJSON
 
 toComment :: NewCommentDto
   -> Id User
