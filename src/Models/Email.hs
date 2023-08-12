@@ -24,7 +24,7 @@ makeEmail text = if valid text then Right (MakeEmail text) else Left "invalid em
   where
     valid = Text.break (== '@')
       >>> second (Text.break (== '.'))
-      >>> \(a, (b, c)) -> (Text.length a > 1) && all (> 2) (Text.length <$> [b, c])
+      >>> \(a, (b, c)) -> (Text.length a > 1) && all ((> 2) . Text.length) [b, c]
 
 instance FromJSON Email where
   parseJSON :: Value -> Parser Email
