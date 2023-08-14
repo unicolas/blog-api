@@ -83,7 +83,7 @@ createPost dto = do
     post = PostDto.toPost dto (RequestContext.userId ?requestCtx) now now
     terms = fromMaybe [] (tags dto)
   PostStore.save post >>= \case
-    Just postId@(Id uuid) -> createTags postId terms $> PostIdDto uuid
+    Just postId -> createTags postId terms $> PostIdDto postId
     Nothing -> throwM (Error.serverError "Failed to create post.")
 
 deletePost :: (?requestCtx :: RequestContext, MonadThrow m, PostStore m)

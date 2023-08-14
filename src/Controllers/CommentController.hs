@@ -127,7 +127,7 @@ createComment postId maybeParent dto = do
     userId = RequestContext.userId ?requestCtx
     comment = CommentDto.toComment dto userId postId maybeParent now now
   CommentStore.save comment >>= \case
-    Just (Id commentId) -> pure CommentIdDto {commentId}
+    Just commentId -> pure CommentIdDto {commentId}
     Nothing -> throwM (Error.serverError "Failed to create comment.")
 
 countComments :: (CommentStore m) => Id Post -> m CountDto

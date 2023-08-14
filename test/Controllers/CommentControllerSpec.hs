@@ -17,7 +17,7 @@ import Data.Maybe (fromJust)
 import Data.UUID (nil)
 import Dto.CommentDto (NewCommentDto(NewCommentDto))
 import qualified Dto.CommentDto as CommentDto (CommentDto(..))
-import qualified Dto.CommentDto as CommentIdDto (toCommentId)
+import qualified Dto.CommentDto as CommentIdDto (CommentIdDto(..))
 import qualified Dto.CommentDto as NewCommentDto (NewCommentDto(..))
 import qualified Dto.Page as Page
 import Mocks.AppMock (runMock)
@@ -30,7 +30,6 @@ import Models.Post (Post(Post))
 import qualified Models.Post as Post
 import qualified Models.Types.Cursor as Cursor
 import Models.Types.Id (Id(..))
-import qualified Models.Types.Id as Id
 import qualified Models.Types.Sorting as Order (Order(Asc, Desc))
 import qualified Models.Types.Sorting as Sort (Sort(CreatedAt, Title))
 import RequestContext (RequestContext(..))
@@ -45,7 +44,7 @@ import Test.Hspec
   , shouldSatisfy
   , shouldThrow
   )
-import Utils (emptyPage, getUuid, makeId, makeUtc, serverError)
+import Utils (emptyPage, makeId, makeUtc, serverError)
 
 spec :: Spec
 spec = do
@@ -114,13 +113,13 @@ spec = do
       it "Finds the comment" $ do
         comment <- runMock
           (createPostComment fstId newComment
-            >>= getComment . CommentIdDto.toCommentId
+            >>= getComment . CommentIdDto.commentId
           ) noComments
         CommentDto.title comment `shouldBe` NewCommentDto.title newComment
         CommentDto.content comment `shouldBe` NewCommentDto.content newComment
-        CommentDto.authorId comment `shouldBe` getUuid idUser
+        CommentDto.authorId comment `shouldBe` idUser
         CommentDto.parentId comment `shouldBe` Nothing
-        CommentDto.postId comment `shouldBe` Id.unwrap fstId
+        CommentDto.postId comment `shouldBe` fstId
 
       it "Throws error if commented post does not exist" $ do
         runMock (createPostComment (Id nil) newComment) noComments
@@ -213,7 +212,7 @@ spec = do
           defaultPageSize
       commentsInPost <- runMock (Page.content <$> getBy) givenComments
       length commentsInPost `shouldBe` 3
-      commentsInPost `shouldSatisfy` all ((== sndId) . Id . CommentDto.postId)
+      commentsInPost `shouldSatisfy` all ((== sndId) . CommentDto.postId)
 
     it "Finds all comments sorted by title descending" $ do
       let
@@ -287,13 +286,13 @@ spec = do
       it "Finds the reply" $ do
         comment <- runMock
           (createCommentReply fstCommentId newComment
-            >>= getComment . CommentIdDto.toCommentId
+            >>= getComment . CommentIdDto.commentId
           ) givenComments
         CommentDto.title comment `shouldBe` NewCommentDto.title newComment
         CommentDto.content comment `shouldBe` NewCommentDto.content newComment
-        CommentDto.authorId comment `shouldBe` getUuid idUser
-        CommentDto.parentId comment `shouldBe` Just (Id.unwrap fstCommentId)
-        CommentDto.postId comment `shouldBe` Id.unwrap fstId
+        CommentDto.authorId comment `shouldBe` idUser
+        CommentDto.parentId comment `shouldBe` Just fstCommentId
+        CommentDto.postId comment `shouldBe` fstId
 
       it "Throws error if replied comment does not exist" $ do
         runMock (createCommentReply (Id nil) newComment) givenComments
@@ -310,4 +309,4 @@ spec = do
       repliesInPost <- runMock (Page.content <$> getReplies) givenComments
       length repliesInPost `shouldBe` 2
       repliesInPost `shouldSatisfy`
-        all ((== Just sndCommentId) . fmap Id . CommentDto.parentId)
+        all ((== Just sndCommentId) . CommentDto.parentId)
