@@ -2,10 +2,10 @@
 
 module Controllers.AuthControllerSpec (spec) where
 
+import Auth (generateKey)
 import Controllers.AuthController (LoginRequest(LoginRequest), login)
-import qualified Controllers.AuthController as LoginRequest
-import Data.ByteString.UTF8 (toString)
-import Data.List (isPrefixOf)
+import qualified Controllers.AuthController as LoginRequest (LoginRequest(..))
+import qualified Controllers.AuthController as LoginResponse (LoginResponse(..))
 import qualified Data.Map as Map
 import Mocks.AppMock (runMock)
 import qualified Mocks.AppMock as AppMock
@@ -18,16 +18,12 @@ import Models.Types.Entity (Entity(..))
 import Models.User (User(..))
 import qualified Models.User as User
 import Models.Username (unsafeUsername)
-import qualified Servant as Http (getHeaders)
-import qualified Servant.Auth.Server as Sas
-import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
 import Test.Hspec
   ( Spec
   , anyException
   , context
   , describe
   , it
-  , shouldBe
   , shouldSatisfy
   , shouldThrow
   )
@@ -61,14 +57,10 @@ spec = do
           , LoginRequest.password = "pass"
           }
       it "Accepts login" $ do
-        key <- Sas.generateKey
-        let check = login defaultCookieSettings (defaultJWTSettings key)
-        response <- runMock (check request) givenUsers
-        let headers = Http.getHeaders response
-        length headers `shouldBe` 2
-        headers `shouldSatisfy` all ((== "Set-Cookie") . fst)
-        headers `shouldSatisfy` any (isPrefixOf "JWT-Cookie" . toString . snd)
-        headers `shouldSatisfy` any (isPrefixOf "XSRF-TOKEN" . toString . snd)
+        key <- generateKey
+        response <- runMock (login key request) givenUsers
+        LoginResponse.access response `shouldSatisfy` not . null
+        LoginResponse.refresh response `shouldSatisfy` not . null
 
     context "When providing invalid login credentials" $ do
       let
@@ -77,6 +69,6 @@ spec = do
           , LoginRequest.password = "wrong-password"
           }
       it "Rejects login" $ do
-        key <- Sas.generateKey
-        let check = login defaultCookieSettings (defaultJWTSettings key)
+        key <- generateKey
+        let check = login key
         runMock (check request) givenUsers `shouldThrow` anyException

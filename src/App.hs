@@ -9,8 +9,8 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (ReaderT(runReaderT))
 import Control.Monad.Reader.Class (MonadReader)
 import Servant (Handler(..))
-import Servant.Auth.Server (ThrowAll(..))
 import Servant.Server (ServerError)
+import ThrowAll (ThrowAll(..))
 
 newtype App a = App (ReaderT AppContext IO a)
   deriving

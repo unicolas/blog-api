@@ -1,61 +1,68 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE ImplicitParams #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Controllers.Api (handlers) where
 
 import App (App)
-import Controllers.AuthController (LoginHeaders, LoginRequest)
+import Controllers.AuthController (LoginRequest, LoginResponse)
 import qualified Controllers.AuthController as AuthController
 import qualified Controllers.CommentController as CommentController
 import qualified Controllers.PostController as PostController
 import qualified Controllers.Types.Error as Error
 import qualified Controllers.UserController as UserController
+import Crypto.JWT (JWK)
 import Dto.CommentDto (CommentDto, CommentIdDto, NewCommentDto)
 import Dto.CountDto (CountDto)
 import Dto.Page (Page)
 import Dto.PostDto (NewPostDto, PostDto, PostIdDto)
 import Dto.UserDto (NewUserDto, UserDto, UserIdDto)
 import GHC.Generics (Generic)
+import AuthClaims (AccessClaims, RefreshClaims, subjectClaim)
 import Models.Comment (Comment)
 import Models.Post (Post)
 import Models.Types.Cursor (Cursor)
-import Models.Types.Entity (Entity)
 import Models.Types.Id (Id)
 import Models.Types.Sorting (Order, Sort)
 import Models.User (User(..))
-import qualified RequestContext
-import RequestContext (RequestContext)
+import RequestContext (RequestContext(..))
 import qualified Servant as Http (Delete, Get, NoContent(..), Post)
-import Servant (Capture, JSON, NamedRoutes, QueryParam, ReqBody, type (:>))
+import Servant
+  (AuthProtect, Capture, JSON, NamedRoutes, QueryParam, ReqBody, type (:>))
 import Servant.API.Generic (type (:-))
-import qualified Servant.Auth.Server as Sas
+import Servant.Server.Experimental.Auth (AuthServerData)
 import Servant.Server.Generic (AsServerT)
+import ThrowAll (throwAll)
 
 type Json = '[JSON]
-type Jwt = '[Sas.JWT]
+
+type AuthJwtAccess = AuthProtect "jwt-access"
+type AuthJwtRefresh = AuthProtect "jwt-refresh"
+
+type instance AuthServerData AuthJwtAccess = AccessClaims
+type instance AuthServerData AuthJwtRefresh = RefreshClaims
 
 data Api mode = Api
   { login :: mode
       -- POST /login
       :- "login"
       :> ReqBody Json LoginRequest
-      :> Http.Post Json LoginHeaders
+      :> Http.Post Json LoginResponse
   , signup :: mode
       -- POST /signup
       :- "signup"
       :> ReqBody Json NewUserDto
       :> Http.Post Json UserIdDto
   , secured :: mode
-      :- Sas.Auth Jwt (Entity User)
+      :- AuthJwtAccess
       :> NamedRoutes SecuredRoutes
   }
   deriving Generic
 
-handlers :: Sas.CookieSettings -> Sas.JWTSettings -> Api (AsServerT App)
-handlers cs jwts = Api
-  { login = AuthController.login cs jwts
+handlers :: JWK -> Api (AsServerT App)
+handlers jwk = Api
+  { login = AuthController.login jwk
   , signup = UserController.createUser
   , secured = securedHandlers
   }
@@ -73,15 +80,14 @@ data SecuredRoutes mode = SecuredRoutes
   }
   deriving (Generic)
 
-securedHandlers :: Sas.AuthResult (Entity User) -> SecuredRoutes (AsServerT App)
-securedHandlers = \case
-  Sas.Authenticated user -> SecuredRoutes
+securedHandlers :: AccessClaims -> SecuredRoutes (AsServerT App)
+securedHandlers (subjectClaim -> Just userId) = SecuredRoutes
     { posts = postHandlers
     , comments = commentHandlers
     , users = userHandlers
     }
-    where ?requestCtx = RequestContext.make user
-  _ -> Sas.throwAll Error.unauthorized
+    where ?requestCtx = RequestContext userId
+securedHandlers _ = throwAll Error.unauthorized
 
 type OrderParam = QueryParam "order" Order
 type SortByParam = QueryParam "sortBy"

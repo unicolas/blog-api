@@ -5,6 +5,7 @@ module Main (main) where
 
 import qualified App
 import AppContext (AppContext(..))
+import Auth (authHandler, fromSecret, generateKey)
 import qualified Configuration.Dotenv as Dotenv
 import qualified Controllers.Api as Api
 import Controllers.Types.Error (customFormatters)
@@ -16,9 +17,10 @@ import qualified DatabaseContext
 import LoggingContext (LoggingContext)
 import qualified LoggingContext
 import qualified LoggingContext as LoggerConfig (LoggerConfig(..))
+import AuthClaims
+  (AccessClaims, RefreshClaims, accessSettings, refreshSettings)
 import Network.Wai.Handler.Warp (run)
 import Servant (Context(..))
-import qualified Servant.Auth.Server as Sas
 import Servant.Server.Generic (genericServeTWithContext)
 import qualified System.Environment as Environment
 import Text.Read (readMaybe)
@@ -32,10 +34,11 @@ main = do
   port <- lookupEnvOrDefault "APP_PORT" 8000
   let ?appCtx = AppContext dbCtx loggingCtx
   let
-    jwtSettings = Sas.defaultJWTSettings key
-    cookieSettings = Sas.defaultCookieSettings
-    ctx = cookieSettings :. jwtSettings :. customFormatters :. EmptyContext
-    server = Api.handlers cookieSettings jwtSettings
+    ctx = customFormatters
+      :. authHandler @AccessClaims key accessSettings
+      :. authHandler @RefreshClaims key refreshSettings
+      :. EmptyContext
+    server = Api.handlers key
     app = genericServeTWithContext App.transform server ctx
   run port app
 
@@ -58,7 +61,7 @@ makeDbCtxFromEnv = do
 makeJwkFromEnv :: IO JWK
 makeJwkFromEnv = do
   secret <- Environment.lookupEnv "JWT_SECRET"
-  maybe Sas.generateKey (pure . Sas.fromSecret . fromString) secret
+  maybe generateKey (pure . fromSecret . fromString) secret
 
 makeLoggingCtxFromEnv :: IO LoggingContext
 makeLoggingCtxFromEnv = do
