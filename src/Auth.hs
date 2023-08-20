@@ -1,12 +1,12 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Auth (authHandler, signToken, generateKey, fromSecret) where
 
 import Control.Arrow (second, (>>>))
 import Control.Monad (guard)
-import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
-import qualified Controllers.Types.Error as Error
 import Crypto.JOSE
   ( JWK
   , KeyMaterialGenParam(OctGenParam)
@@ -27,13 +27,10 @@ import Network.Wai (Request, requestHeaders)
 import Servant.Server.Experimental.Auth (AuthHandler, mkAuthHandler)
 
 authHandler :: (HasClaimsSet a, FromJSON a)
-  => JWK -> JWTValidationSettings -> AuthHandler Request a
-authHandler jwk settings = mkAuthHandler handleAuth
-  where
-    handleAuth req = checkAuth (getToken req)
-      >>= liftIO . verifyToken jwk settings
-      >>= checkAuth
-    checkAuth = maybe (throwError Error.unauthorized) pure
+  => JWK -> JWTValidationSettings -> AuthHandler Request (Maybe a)
+authHandler jwk settings = mkAuthHandler $ \case
+  (getToken -> Just token) -> liftIO (verifyToken jwk settings token)
+  _ -> pure Nothing
 
 getToken :: Request -> Maybe ByteString
 getToken req = do

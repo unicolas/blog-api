@@ -6,6 +6,7 @@
 module Controllers.Api (handlers) where
 
 import App (App)
+import AuthClaims (AccessClaims, RefreshClaims, subjectClaim)
 import Controllers.AuthController (LoginRequest, LoginResponse)
 import qualified Controllers.AuthController as AuthController
 import qualified Controllers.CommentController as CommentController
@@ -19,7 +20,6 @@ import Dto.Page (Page)
 import Dto.PostDto (NewPostDto, PostDto, PostIdDto)
 import Dto.UserDto (NewUserDto, UserDto, UserIdDto)
 import GHC.Generics (Generic)
-import AuthClaims (AccessClaims, RefreshClaims, subjectClaim)
 import Models.Comment (Comment)
 import Models.Post (Post)
 import Models.Types.Cursor (Cursor)
@@ -40,8 +40,8 @@ type Json = '[JSON]
 type AuthJwtAccess = AuthProtect "jwt-access"
 type AuthJwtRefresh = AuthProtect "jwt-refresh"
 
-type instance AuthServerData AuthJwtAccess = AccessClaims
-type instance AuthServerData AuthJwtRefresh = RefreshClaims
+type instance AuthServerData AuthJwtAccess = Maybe AccessClaims
+type instance AuthServerData AuthJwtRefresh = Maybe RefreshClaims
 
 data Api mode = Api
   { login :: mode
@@ -80,13 +80,13 @@ data SecuredRoutes mode = SecuredRoutes
   }
   deriving (Generic)
 
-securedHandlers :: AccessClaims -> SecuredRoutes (AsServerT App)
-securedHandlers (subjectClaim -> Just userId) = SecuredRoutes
-    { posts = postHandlers
-    , comments = commentHandlers
-    , users = userHandlers
-    }
-    where ?requestCtx = RequestContext userId
+securedHandlers :: Maybe AccessClaims -> SecuredRoutes (AsServerT App)
+securedHandlers (Just (subjectClaim -> Just userId)) = SecuredRoutes
+  { posts = postHandlers
+  , comments = commentHandlers
+  , users = userHandlers
+  }
+  where ?requestCtx = RequestContext userId
 securedHandlers _ = throwAll Error.unauthorized
 
 type OrderParam = QueryParam "order" Order
