@@ -42,13 +42,13 @@ getToken req = do
 
 verifyToken :: (HasClaimsSet a, FromJSON a)
   => JWK -> JWTValidationSettings -> ByteString -> IO (Maybe a)
-verifyToken jwk settings token = fromRight <$> runJOSE @JWTError verify
+verifyToken jwk settings token = maybeRight <$> runJOSE @JWTError verify
   where
     verify = decodeCompact lazy >>= verifyJWT settings jwk
     lazy = LazyByteString.fromString (ByteString.toString token)
 
 signToken :: (ToJSON a) => JWK -> a -> IO (Maybe SignedJWT)
-signToken jwk claims = fromRight <$> runJOSE @JWTError sign
+signToken jwk claims = maybeRight <$> runJOSE @JWTError sign
   where
     sign = do
       alg <- bestJWSAlg jwk
@@ -60,5 +60,5 @@ generateKey = genJWK (OctGenParam 256)
 fromSecret :: ByteString -> JWK
 fromSecret = fromOctets
 
-fromRight :: Either a b -> Maybe b
-fromRight = either (const Nothing) Just
+maybeRight :: Either a b -> Maybe b
+maybeRight = either (const Nothing) Just

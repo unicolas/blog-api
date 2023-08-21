@@ -17,12 +17,14 @@ import Crypto.JWT
   ( Audience(..)
   , ClaimsSet
   , HasClaimsSet(..)
+  , JWTValidationSettings
   , NumericDate(..)
   , claimExp
   , claimIat
   , claimSub
+  , defaultJWTValidationSettings
   , emptyClaimsSet
-  , string, defaultJWTValidationSettings, JWTValidationSettings
+  , string
   )
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Function ((&))
@@ -69,7 +71,7 @@ refreshClaims (Id userId) issuedAt = emptyClaimsSet
   & RefreshClaims
 
 refreshSettings :: JWTValidationSettings
-refreshSettings = defaultJWTValidationSettings (== "access")
+refreshSettings = defaultJWTValidationSettings (== "refresh")
 
 subjectClaim :: HasClaimsSet a => a -> Maybe (Id User)
 subjectClaim c = Id <$> (view claimSub c >>= Uuid.fromText . view string)

@@ -49,6 +49,11 @@ data Api mode = Api
       :- "login"
       :> ReqBody Json LoginRequest
       :> Http.Post Json LoginResponse
+  , refresh :: mode
+      -- POST /refresh
+      :- "refresh"
+      :> AuthJwtRefresh
+      :> Http.Post Json LoginResponse
   , signup :: mode
       -- POST /signup
       :- "signup"
@@ -63,6 +68,7 @@ data Api mode = Api
 handlers :: JWK -> Api (AsServerT App)
 handlers jwk = Api
   { login = AuthController.login jwk
+  , refresh = AuthController.refreshToken jwk
   , signup = UserController.createUser
   , secured = securedHandlers
   }

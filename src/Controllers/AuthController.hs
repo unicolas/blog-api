@@ -3,11 +3,12 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Controllers.AuthController (login, LoginRequest(..), LoginResponse(..)) where
+module Controllers.AuthController (login, LoginRequest(..), LoginResponse(..), refreshToken) where
 
 import Auth (signToken)
-import AuthClaims (accessClaims, refreshClaims)
-import Control.Monad (liftM2, when)
+import AuthClaims (RefreshClaims, accessClaims, refreshClaims, subjectClaim)
+import Control.Applicative (liftA2)
+import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Controllers.Types.Error as Error
@@ -49,19 +50,28 @@ login jwk LoginRequest {..} = do
     Just (Aggregate u c) -> pure (u, c)
   when (Bcrypt.PasswordCheckFail == checkPassword password creds)
     $ throwM Error.unauthorized
-  now <- liftIO getCurrentTime
-  maybeJwts <- liftIO $ sequenceTuple
-    ( signToken jwk (accessClaims userId now)
-    , signToken jwk (refreshClaims userId now)
-    )
+  liftIO $ do
+    now <- getCurrentTime
+    loginResponse jwk (accessClaims userId now) (refreshClaims userId now)
+  where
+    maybeRight = either (const Nothing) Just
+    checkPassword plain Credentials {password = HashedPassword pswd} =
+      Bcrypt.checkPassword (Bcrypt.mkPassword plain) (Bcrypt.PasswordHash pswd)
+
+refreshToken :: (MonadThrow m, MonadIO m)
+  => JWK -> Maybe RefreshClaims -> m LoginResponse
+refreshToken jwk (Just claims@(subjectClaim -> Just userId)) = liftIO $ do
+  now <- getCurrentTime
+  loginResponse jwk (accessClaims userId now) claims
+refreshToken _ _ = throwM Error.unauthorized
+
+loginResponse :: (ToJSON a, ToJSON b) => JWK -> a -> b -> IO LoginResponse
+loginResponse jwk acc refr = do
+  maybeJwts <- sequencePair (signToken jwk acc, signToken jwk refr)
   case maybeJwts of
     (Just (toString -> access), Just (toString -> refresh))
       -> pure LoginResponse {..}
     _ -> throwM Error.unauthorized
   where
-    sequenceTuple = uncurry (liftM2 (,))
-    maybeRight = either (const Nothing) Just
-    checkPassword plain Credentials {password = HashedPassword pswd} =
-      Bcrypt.checkPassword (Bcrypt.mkPassword plain) (Bcrypt.PasswordHash pswd)
+    sequencePair = uncurry (liftA2 (,))
     toString = LazyByteString.toString . Jwt.encodeCompact
-
