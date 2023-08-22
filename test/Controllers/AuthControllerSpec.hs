@@ -2,11 +2,15 @@
 
 module Controllers.AuthControllerSpec (spec) where
 
-import Controllers.AuthController (LoginRequest(LoginRequest), login)
-import qualified Controllers.AuthController as LoginRequest
-import Data.ByteString.UTF8 (toString)
-import Data.List (isPrefixOf)
+import Auth (generateKey)
+import AuthClaims (refreshClaims)
+import Controllers.AuthController
+  (LoginRequest(LoginRequest), login, refreshToken)
+import qualified Controllers.AuthController as LoginRequest (LoginRequest(..))
+import qualified Controllers.AuthController as LoginResponse (LoginResponse(..))
 import qualified Data.Map as Map
+import Data.Time (getCurrentTime)
+import Data.UUID (nil)
 import Mocks.AppMock (runMock)
 import qualified Mocks.AppMock as AppMock
 import Mocks.UserStore ()
@@ -15,22 +19,12 @@ import qualified Models.Credentials as Credentials
 import Models.Email (unsafeEmail)
 import Models.HashedPassword (unsafeHashedPassword)
 import Models.Types.Entity (Entity(..))
+import Models.Types.Id (Id(..))
 import Models.User (User(..))
 import qualified Models.User as User
 import Models.Username (unsafeUsername)
-import qualified Servant as Http (getHeaders)
-import qualified Servant.Auth.Server as Sas
-import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
 import Test.Hspec
-  ( Spec
-  , anyException
-  , context
-  , describe
-  , it
-  , shouldBe
-  , shouldSatisfy
-  , shouldThrow
-  )
+  (Spec, anyException, context, describe, it, shouldSatisfy, shouldThrow)
 import Utils (makeId)
 
 spec :: Spec
@@ -61,14 +55,10 @@ spec = do
           , LoginRequest.password = "pass"
           }
       it "Accepts login" $ do
-        key <- Sas.generateKey
-        let check = login defaultCookieSettings (defaultJWTSettings key)
-        response <- runMock (check request) givenUsers
-        let headers = Http.getHeaders response
-        length headers `shouldBe` 2
-        headers `shouldSatisfy` all ((== "Set-Cookie") . fst)
-        headers `shouldSatisfy` any (isPrefixOf "JWT-Cookie" . toString . snd)
-        headers `shouldSatisfy` any (isPrefixOf "XSRF-TOKEN" . toString . snd)
+        key <- generateKey
+        response <- runMock (login key request) givenUsers
+        LoginResponse.access response `shouldSatisfy` not . null
+        LoginResponse.refresh response `shouldSatisfy` not . null
 
     context "When providing invalid login credentials" $ do
       let
@@ -77,6 +67,20 @@ spec = do
           , LoginRequest.password = "wrong-password"
           }
       it "Rejects login" $ do
-        key <- Sas.generateKey
-        let check = login defaultCookieSettings (defaultJWTSettings key)
+        key <- generateKey
+        let check = login key
         runMock (check request) givenUsers `shouldThrow` anyException
+
+    context "When providing a valid refresh token" $ do
+      it "Refreshes token" $ do
+        key <- generateKey
+        now <- getCurrentTime
+        let claims = Just (refreshClaims (Id nil) now)
+        response <- runMock (refreshToken key claims) givenUsers
+        LoginResponse.access response `shouldSatisfy` not . null
+        LoginResponse.refresh response `shouldSatisfy` not . null
+
+    context "When providing an invalid refresh token" $ do
+      it "Fails to refresh token" $ do
+        key <- generateKey
+        runMock (refreshToken key Nothing) givenUsers `shouldThrow` anyException

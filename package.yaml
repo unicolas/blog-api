@@ -28,12 +28,12 @@ dependencies:
   - exceptions
   - fast-logger
   - jose
+  - lens
   - mtl
   - password
   - postgresql-simple
   - resource-pool
   - servant
-  - servant-auth-server
   - servant-client
   - servant-server
   - text

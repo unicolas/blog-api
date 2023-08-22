@@ -26,6 +26,8 @@ library
   exposed-modules:
       App
       AppContext
+      Auth
+      AuthClaims
       Controllers.Api
       Controllers.AuthController
       Controllers.CommentController
@@ -61,6 +63,7 @@ library
       Stores.Query
       Stores.TagStore
       Stores.UserStore
+      ThrowAll
   other-modules:
       Paths_blog_api
   hs-source-dirs:
@@ -74,12 +77,12 @@ library
     , exceptions
     , fast-logger
     , jose
+    , lens
     , mtl
     , password
     , postgresql-simple
     , resource-pool
     , servant
-    , servant-auth-server
     , servant-client
     , servant-server
     , text
@@ -106,12 +109,12 @@ executable blog-api-exe
     , exceptions
     , fast-logger
     , jose
+    , lens
     , mtl
     , password
     , postgresql-simple
     , resource-pool
     , servant
-    , servant-auth-server
     , servant-client
     , servant-server
     , text
@@ -159,13 +162,13 @@ test-suite blog-api-test
     , fast-logger
     , hspec
     , jose
+    , lens
     , mtl
     , password
     , postgresql-simple
     , quickcheck-instances
     , resource-pool
     , servant
-    , servant-auth-server
     , servant-client
     , servant-server
     , text
