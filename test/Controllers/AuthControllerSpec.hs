@@ -3,10 +3,14 @@
 module Controllers.AuthControllerSpec (spec) where
 
 import Auth (generateKey)
-import Controllers.AuthController (LoginRequest(LoginRequest), login)
+import AuthClaims (refreshClaims)
+import Controllers.AuthController
+  (LoginRequest(LoginRequest), login, refreshToken)
 import qualified Controllers.AuthController as LoginRequest (LoginRequest(..))
 import qualified Controllers.AuthController as LoginResponse (LoginResponse(..))
 import qualified Data.Map as Map
+import Data.Time (getCurrentTime)
+import Data.UUID (nil)
 import Mocks.AppMock (runMock)
 import qualified Mocks.AppMock as AppMock
 import Mocks.UserStore ()
@@ -15,18 +19,12 @@ import qualified Models.Credentials as Credentials
 import Models.Email (unsafeEmail)
 import Models.HashedPassword (unsafeHashedPassword)
 import Models.Types.Entity (Entity(..))
+import Models.Types.Id (Id(..))
 import Models.User (User(..))
 import qualified Models.User as User
 import Models.Username (unsafeUsername)
 import Test.Hspec
-  ( Spec
-  , anyException
-  , context
-  , describe
-  , it
-  , shouldSatisfy
-  , shouldThrow
-  )
+  (Spec, anyException, context, describe, it, shouldSatisfy, shouldThrow)
 import Utils (makeId)
 
 spec :: Spec
@@ -72,3 +70,17 @@ spec = do
         key <- generateKey
         let check = login key
         runMock (check request) givenUsers `shouldThrow` anyException
+
+    context "When providing a valid refresh token" $ do
+      it "Refreshes token" $ do
+        key <- generateKey
+        now <- getCurrentTime
+        let claims = Just (refreshClaims (Id nil) now)
+        response <- runMock (refreshToken key claims) givenUsers
+        LoginResponse.access response `shouldSatisfy` not . null
+        LoginResponse.refresh response `shouldSatisfy` not . null
+
+    context "When providing an invalid refresh token" $ do
+      it "Fails to refresh token" $ do
+        key <- generateKey
+        runMock (refreshToken key Nothing) givenUsers `shouldThrow` anyException
