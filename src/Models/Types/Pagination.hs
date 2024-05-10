@@ -26,13 +26,13 @@ defaultPagination = Pagination
   }
 
 withSort :: Maybe Sort -> Pagination -> Pagination
-withSort s p = maybe p (\sort -> p { sort = sort }) s
+withSort s p = maybe p (\sort -> p {sort}) s
 
 withOrder :: Maybe Order -> Pagination -> Pagination
-withOrder o p = maybe p (\order -> p { order = order }) o
+withOrder o p = maybe p (\order -> p {order}) o
 
 withCount :: Maybe Int -> Pagination -> Pagination
-withCount c p = maybe p (\count -> p { count = count }) c
+withCount c p = maybe p (\count -> p {count}) c
 
 withCursor :: Maybe Cursor -> Pagination -> Pagination
-withCursor c p = p { cursor = c }
+withCursor cursor p = p {cursor}
