@@ -7,7 +7,6 @@ module Controllers.AuthController (login, LoginRequest(..), LoginResponse(..), r
 
 import Auth (signToken)
 import AuthClaims (RefreshClaims, accessClaims, refreshClaims, subjectClaim)
-import Control.Applicative (liftA2)
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -67,11 +66,10 @@ refreshToken _ _ = throwM Error.unauthorized
 
 loginResponse :: (ToJSON a, ToJSON b) => JWK -> a -> b -> IO LoginResponse
 loginResponse jwk acc refr = do
-  maybeJwts <- sequencePair (signToken jwk acc, signToken jwk refr)
-  case maybeJwts of
-    (Just (toString -> access), Just (toString -> refresh))
+  signedJwts <- sequence [signToken jwk acc, signToken jwk refr]
+  case signedJwts of
+    [Just (toString -> access), Just (toString -> refresh)]
       -> pure LoginResponse {access, refresh}
     _ -> throwM Error.unauthorized
   where
-    sequencePair = uncurry (liftA2 (,))
     toString = LazyByteString.toString . Jwt.encodeCompact
