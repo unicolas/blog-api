@@ -1,5 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
-
 module Logger (Logger(..), logDebug, logInfo, logWarn, logError) where
 
 import App (App)
@@ -19,7 +17,7 @@ class Monad m => Logger m where
 instance Logger App where
   logMsg :: LogLevel -> Text -> App ()
   logMsg lvl msg = do
-    LoggingContext {..} <- asks loggingContext
+    LoggingContext {level, logger} <- asks loggingContext
     when (level <= lvl) (logger compose)
       & liftIO
     where

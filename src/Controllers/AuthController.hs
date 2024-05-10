@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Controllers.AuthController (login, LoginRequest(..), LoginResponse(..), refreshToken) where
@@ -42,7 +42,7 @@ data LoginResponse = LoginResponse
 
 login :: (MonadThrow m, UserStore m, MonadIO m)
   => JWK -> LoginRequest -> m LoginResponse
-login jwk LoginRequest {..} = do
+login jwk LoginRequest {username, password} = do
   let parsedUsername = maybeRight (makeUsername username)
   maybeAggr <- maybe (pure Nothing) UserStore.findWithCredentials parsedUsername
   (Entity userId _, creds) <- case maybeAggr of
@@ -70,7 +70,7 @@ loginResponse jwk acc refr = do
   maybeJwts <- sequencePair (signToken jwk acc, signToken jwk refr)
   case maybeJwts of
     (Just (toString -> access), Just (toString -> refresh))
-      -> pure LoginResponse {..}
+      -> pure LoginResponse {access, refresh}
     _ -> throwM Error.unauthorized
   where
     sequencePair = uncurry (liftA2 (,))
