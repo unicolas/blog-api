@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -28,6 +28,7 @@ library
       AppContext
       Auth
       AuthClaims
+      CacheContext
       Controllers.Api
       Controllers.AuthController
       Controllers.CommentController
@@ -62,8 +63,10 @@ library
       Stores.PostStore
       Stores.Query
       Stores.TagStore
+      Stores.TokenStore
       Stores.UserStore
       ThrowAll
+      Utility
   other-modules:
       Paths_blog_api
   hs-source-dirs:
@@ -76,6 +79,7 @@ library
     , dotenv
     , exceptions
     , fast-logger
+    , hedis
     , jose
     , lens
     , mtl
@@ -108,6 +112,7 @@ executable blog-api-exe
     , dotenv
     , exceptions
     , fast-logger
+    , hedis
     , jose
     , lens
     , mtl
@@ -139,6 +144,7 @@ test-suite blog-api-test
       Mocks.Logger
       Mocks.PostStore
       Mocks.TagStore
+      Mocks.TokenStore
       Mocks.UserStore
       Models.EmailSpec
       Models.PasswordSpec
@@ -160,6 +166,7 @@ test-suite blog-api-test
     , dotenv
     , exceptions
     , fast-logger
+    , hedis
     , hspec
     , jose
     , lens

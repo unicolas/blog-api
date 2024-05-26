@@ -1,12 +1,15 @@
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Auth (authHandler, signToken, generateKey, fromSecret) where
 
+import qualified App
+import AppContext (AppContext)
 import Control.Arrow (second, (>>>))
 import Control.Monad (guard)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Crypto.JOSE
   ( JWK
   , KeyMaterialGenParam(OctGenParam)
@@ -25,11 +28,14 @@ import Data.ByteString.UTF8 (ByteString)
 import qualified Data.ByteString.UTF8 as ByteString
 import Network.Wai (Request, requestHeaders)
 import Servant.Server.Experimental.Auth (AuthHandler, mkAuthHandler)
+import Stores.TokenStore (TokenStore(isBlacklisted))
+import Utility (maybeRight, (<<*))
 
-authHandler :: (HasClaimsSet a, FromJSON a)
-  => JWK -> JWTValidationSettings -> AuthHandler Request (Maybe a)
+authHandler :: (?appCtx :: AppContext)
+  => (HasClaimsSet a, FromJSON a)
+  => JWK -> JWTValidationSettings -> AuthHandler Request (Maybe (a, ByteString))
 authHandler jwk settings = mkAuthHandler $ \case
-  (getToken -> Just token) -> liftIO (verifyToken jwk settings token)
+  (getToken -> Just token) -> App.transform (verifyToken jwk settings token)
   _ -> pure Nothing
 
 getToken :: Request -> Maybe ByteString
@@ -40,12 +46,15 @@ getToken req = do
   where
     split = ByteString.break (== ' ') >>> second (ByteString.drop 1)
 
-verifyToken :: (HasClaimsSet a, FromJSON a)
-  => JWK -> JWTValidationSettings -> ByteString -> IO (Maybe a)
-verifyToken jwk settings token = maybeRight <$> runJOSE @JWTError verify
+verifyToken :: (HasClaimsSet a, FromJSON a, TokenStore m, MonadIO m)
+  => JWK -> JWTValidationSettings -> ByteString -> m (Maybe (a, ByteString))
+verifyToken jwk settings token = runVerification <<* checkBlacklist
   where
-    verify = decodeCompact lazy >>= verifyJWT settings jwk
-    lazy = LazyByteString.fromString (ByteString.toString token)
+    runVerification = liftIO $ do
+      validation <- runJOSE @JWTError (decode token >>= verifyJWT settings jwk)
+      pure ((,token) <$> maybeRight validation)
+    checkBlacklist = guard . not <$> isBlacklisted token
+    decode = decodeCompact . LazyByteString.fromString . ByteString.toString
 
 signToken :: (ToJSON a) => JWK -> a -> IO (Maybe SignedJWT)
 signToken jwk claims = maybeRight <$> runJOSE @JWTError sign
@@ -59,6 +68,3 @@ generateKey = genJWK (OctGenParam 256)
 
 fromSecret :: ByteString -> JWK
 fromSecret = fromOctets
-
-maybeRight :: Either a b -> Maybe b
-maybeRight = either (const Nothing) Just

@@ -10,6 +10,7 @@ module AuthClaims
   , refreshClaims
   , refreshSettings
   , subjectClaim
+  , expireAtClaim
   ) where
 
 import Control.Lens (Lens', view, (?~))
@@ -75,3 +76,6 @@ refreshSettings = defaultJWTValidationSettings (== "refresh")
 
 subjectClaim :: HasClaimsSet a => a -> Maybe (Id User)
 subjectClaim c = Id <$> (view claimSub c >>= Uuid.fromText . view string)
+
+expireAtClaim :: HasClaimsSet s => s -> Maybe UTCTime
+expireAtClaim = fmap (\(NumericDate utc) -> utc) . view claimExp

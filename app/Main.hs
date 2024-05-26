@@ -6,6 +6,8 @@ module Main (main) where
 import qualified App
 import AppContext (AppContext(..))
 import Auth (authHandler, fromSecret, generateKey)
+import AuthClaims (AccessClaims, RefreshClaims, accessSettings, refreshSettings)
+import CacheContext (CacheContext, makeCacheCtx)
 import qualified Configuration.Dotenv as Dotenv
 import qualified Controllers.Api as Api
 import Controllers.Types.Error (customFormatters)
@@ -17,8 +19,6 @@ import qualified DatabaseContext
 import LoggingContext (LoggingContext)
 import qualified LoggingContext
 import qualified LoggingContext as LoggerConfig (LoggerConfig(..))
-import AuthClaims
-  (AccessClaims, RefreshClaims, accessSettings, refreshSettings)
 import Network.Wai.Handler.Warp (run)
 import Servant (Context(..))
 import Servant.Server.Generic (genericServeTWithContext)
@@ -28,11 +28,12 @@ import Text.Read (readMaybe)
 main :: IO ()
 main = do
   loadEnv
-  dbCtx <- makeDbCtxFromEnv
-  loggingCtx <- makeLoggingCtxFromEnv
+  databaseContext <- makeDbCtxFromEnv
+  loggingContext <- makeLoggingCtxFromEnv
+  cacheContext <- makeCacheCtxFromEnv
   key <- makeJwkFromEnv
   port <- lookupEnvOrDefault "APP_PORT" 8000
-  let ?appCtx = AppContext dbCtx loggingCtx
+  let ?appCtx = AppContext {databaseContext, loggingContext, cacheContext}
   let
     ctx = customFormatters
       :. authHandler @AccessClaims key accessSettings
@@ -75,3 +76,6 @@ makeLoggingCtxFromEnv = do
     , LoggerConfig.timeFormat = timeFormat
     , LoggerConfig.bufferSize = bufferSize
     }
+
+makeCacheCtxFromEnv :: IO CacheContext
+makeCacheCtxFromEnv = Environment.getEnv "CACHE_URL" >>= makeCacheCtx

@@ -27,6 +27,7 @@ dependencies:
   - dotenv
   - exceptions
   - fast-logger
+  - hedis
   - jose
   - lens
   - mtl
