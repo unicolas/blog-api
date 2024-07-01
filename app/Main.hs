@@ -5,14 +5,14 @@ module Main (main) where
 
 import qualified App
 import AppContext (AppContext(..))
-import Auth (authHandler, fromSecret, generateKey)
+import Auth (authHandler, fromSecret, generateKey, pass, revoke)
 import AuthClaims (AccessClaims, RefreshClaims, accessSettings, refreshSettings)
 import CacheContext (CacheContext, makeCacheCtx)
 import qualified Configuration.Dotenv as Dotenv
 import qualified Controllers.Api as Api
 import Controllers.Types.Error (customFormatters)
 import Crypto.JOSE (JWK)
-import Data.ByteString.UTF8 (fromString)
+import qualified Data.ByteString.Char8 as Char8
 import Data.Maybe (fromMaybe)
 import DatabaseContext (DatabaseContext)
 import qualified DatabaseContext
@@ -36,8 +36,8 @@ main = do
   let ?appCtx = AppContext {databaseContext, loggingContext, cacheContext}
   let
     ctx = customFormatters
-      :. authHandler @AccessClaims key accessSettings
-      :. authHandler @RefreshClaims key refreshSettings
+      :. authHandler @AccessClaims key accessSettings pass App.transform
+      :. authHandler @RefreshClaims key refreshSettings revoke App.transform
       :. EmptyContext
     server = Api.handlers key
     app = genericServeTWithContext App.transform server ctx
@@ -53,7 +53,7 @@ lookupEnvOrDefault var def = do
 
 makeDbCtxFromEnv :: IO DatabaseContext
 makeDbCtxFromEnv = do
-  conn <- fromString <$> Environment.getEnv "DATABASE_URL"
+  conn <- Char8.pack <$> Environment.getEnv "DATABASE_URL"
   poolCacheTtl <- lookupEnvOrDefault "POOL_CACHE_TTL" 60
   poolNumStripes <- lookupEnvOrDefault "POOL_NUM_STRIPES" 2
   poolMaxPerStripe <- lookupEnvOrDefault "POOL_MAX_PER_STRIPE" 10
@@ -62,7 +62,7 @@ makeDbCtxFromEnv = do
 makeJwkFromEnv :: IO JWK
 makeJwkFromEnv = do
   secret <- Environment.lookupEnv "JWT_SECRET"
-  maybe generateKey (pure . fromSecret . fromString) secret
+  maybe generateKey (pure . fromSecret . Char8.pack) secret
 
 makeLoggingCtxFromEnv :: IO LoggingContext
 makeLoggingCtxFromEnv = do

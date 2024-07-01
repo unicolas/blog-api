@@ -8,9 +8,7 @@
 module Controllers.AuthController (login, LoginRequest(..), LoginResponse(..), refreshToken) where
 
 import Auth (signToken)
-import AuthClaims
-  (RefreshClaims, accessClaims, expireAtClaim, refreshClaims, subjectClaim)
-import Control.Arrow ((&&&))
+import AuthClaims (RefreshClaims, accessClaims, refreshClaims, subjectClaim)
 import Control.Monad (when)
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -19,10 +17,10 @@ import Crypto.JOSE (JWK)
 import Crypto.JWT (SignedJWT)
 import qualified Crypto.JWT as Jwt
 import Data.Aeson (FromJSON, ToJSON)
-import qualified Data.ByteString.Lazy.UTF8 as LazyByteString
-import Data.ByteString.UTF8 (ByteString)
+import qualified Data.ByteString.Char8 as Char8
 import qualified Data.Password.Bcrypt as Bcrypt
 import Data.Text (Text)
+import Data.Text.Encoding (decodeUtf8Lenient)
 import Data.Time (getCurrentTime)
 import GHC.Generics (Generic)
 import Models.Credentials (Credentials(..))
@@ -32,7 +30,6 @@ import Models.Types.Entity (Entity(..))
 import Models.Types.Id (Id)
 import Models.User (User)
 import Models.Username (makeUsername)
-import Stores.TokenStore (TokenStore(blacklist))
 import qualified Stores.UserStore as UserStore
 import Stores.UserStore (UserStore)
 import Utility (maybeRight)
@@ -44,8 +41,8 @@ data LoginRequest = LoginRequest
   deriving (Generic, FromJSON)
 
 data LoginResponse = LoginResponse
-  { access :: !String
-  , refresh :: !String
+  { access :: !Text
+  , refresh :: !Text
   }
   deriving (Generic, ToJSON)
 
@@ -65,20 +62,19 @@ login jwk LoginRequest {username, password} = do
     checkPassword plain Credentials {password = HashedPassword pswd} =
       Bcrypt.checkPassword (Bcrypt.mkPassword plain) (Bcrypt.PasswordHash pswd)
 
-refreshToken :: (MonadThrow m, MonadIO m, TokenStore m)
-  => JWK -> Maybe (RefreshClaims, ByteString) -> m LoginResponse
-refreshToken jwk = \case
-  Just (subjectClaim &&& expireAtClaim -> (Just userId, Just expAt), token)
-    -> (signNewTokens jwk userId >>= makeLoginResponse) <* blacklist token expAt
-  _ -> throwM Error.unauthorized
+refreshToken :: (MonadThrow m, MonadIO m)
+  => JWK -> Maybe RefreshClaims -> m LoginResponse
+refreshToken jwk (Just (subjectClaim -> Just userId)) =
+  signNewTokens jwk userId >>= makeLoginResponse
+refreshToken _ _ = throwM Error.unauthorized
 
 makeLoginResponse :: MonadThrow m => [Maybe SignedJWT] -> m LoginResponse
 makeLoginResponse = \case
-  [Just (toString -> access), Just (toString -> refresh)]
+  [Just (toText -> access), Just (toText -> refresh)]
     -> pure LoginResponse {access, refresh}
   _ -> throwM (Error.serverError "Failed to generate new tokens")
   where
-    toString = LazyByteString.toString . Jwt.encodeCompact
+    toText = decodeUtf8Lenient . Char8.toStrict . Jwt.encodeCompact
 
 signNewTokens :: MonadIO m => JWK -> Id User -> m [Maybe SignedJWT]
 signNewTokens jwk userId = liftIO $ do

@@ -4,17 +4,16 @@ module Controllers.AuthControllerSpec (spec) where
 
 import Auth (generateKey)
 import AuthClaims (refreshClaims)
-import Control.Applicative (liftA2)
 import Controllers.AuthController
   (LoginRequest(LoginRequest), login, refreshToken)
 import qualified Controllers.AuthController as LoginRequest (LoginRequest(..))
 import qualified Controllers.AuthController as LoginResponse (LoginResponse(..))
 import qualified Data.Map as Map
+import qualified Data.Text as Text
 import Data.Time (getCurrentTime)
 import Data.UUID (nil)
 import Mocks.AppMock (runMock)
 import qualified Mocks.AppMock as AppMock
-import Mocks.TokenStore (TokenStore(isBlacklisted))
 import Mocks.UserStore ()
 import Models.Credentials (Credentials(Credentials))
 import qualified Models.Credentials as Credentials
@@ -26,15 +25,7 @@ import Models.User (User(..))
 import qualified Models.User as User
 import Models.Username (unsafeUsername)
 import Test.Hspec
-  ( Spec
-  , anyException
-  , context
-  , describe
-  , it
-  , shouldBe
-  , shouldSatisfy
-  , shouldThrow
-  )
+  (Spec, anyException, context, describe, it, shouldSatisfy, shouldThrow)
 import Utils (makeId)
 
 spec :: Spec
@@ -67,8 +58,8 @@ spec = do
       it "Accepts login" $ do
         key <- generateKey
         response <- runMock (login key request) givenUsers
-        LoginResponse.access response `shouldSatisfy` not . null
-        LoginResponse.refresh response `shouldSatisfy` not . null
+        LoginResponse.access response `shouldSatisfy` not . Text.null
+        LoginResponse.refresh response `shouldSatisfy` not . Text.null
 
     context "When providing invalid login credentials" $ do
       let
@@ -82,16 +73,13 @@ spec = do
         runMock (check request) givenUsers `shouldThrow` anyException
 
     context "When providing a valid refresh token" $ do
-      it "Refreshes token & blacklists old one" $ do
+      it "Refreshes token" $ do
         key <- generateKey
         now <- getCurrentTime
-        let claims = Just (refreshClaims (Id nil) now, "token")
-        (response, blacklisted) <- runMock
-          (liftA2 (,) (refreshToken key claims) (isBlacklisted "token"))
-          givenUsers
-        LoginResponse.access response `shouldSatisfy` not . null
-        LoginResponse.refresh response `shouldSatisfy` not . null
-        blacklisted `shouldBe` True
+        let claims = Just (refreshClaims (Id nil) now)
+        response <- runMock (refreshToken key claims) givenUsers
+        LoginResponse.access response `shouldSatisfy` not . Text.null
+        LoginResponse.refresh response `shouldSatisfy` not . Text.null
 
     context "When providing an invalid refresh token" $ do
       it "Fails to refresh token" $ do

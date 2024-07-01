@@ -1,17 +1,16 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Mocks.TokenStore (TokenStore(..)) where
+module Mocks.Blacklist (Blacklist(..)) where
 
+import Auth (Blacklist(..))
 import Control.Monad.State (gets, modify)
-import Data.ByteString.UTF8 (ByteString)
-import Data.Time (UTCTime)
+import Data.ByteString (ByteString)
 import Mocks.AppMock (AppMock)
 import qualified Mocks.AppMock as AppMock
-import Stores.TokenStore (TokenStore(..))
 
-instance TokenStore AppMock where
-  blacklist :: ByteString -> UTCTime -> AppMock ()
-  blacklist token _ = do
+instance Blacklist AppMock where
+  addToBlacklist :: ByteString -> AppMock ()
+  addToBlacklist token = do
     newBlacklist <- gets ((token:) . AppMock.blacklist)
     modify (\s -> s {AppMock.blacklist = newBlacklist})
 

@@ -14,7 +14,6 @@ import qualified Controllers.PostController as PostController
 import qualified Controllers.Types.Error as Error
 import qualified Controllers.UserController as UserController
 import Crypto.JWT (JWK)
-import Data.ByteString.UTF8 (ByteString)
 import Dto.CommentDto (CommentDto, CommentIdDto, NewCommentDto)
 import Dto.CountDto (CountDto)
 import Dto.Page (Page)
@@ -41,8 +40,8 @@ type Json = '[JSON]
 type AuthJwtAccess = AuthProtect "jwt-access"
 type AuthJwtRefresh = AuthProtect "jwt-refresh"
 
-type instance AuthServerData AuthJwtAccess = Maybe (AccessClaims, ByteString)
-type instance AuthServerData AuthJwtRefresh = Maybe (RefreshClaims, ByteString)
+type instance AuthServerData AuthJwtAccess = Maybe AccessClaims
+type instance AuthServerData AuthJwtRefresh = Maybe RefreshClaims
 
 data Api mode = Api
   { login :: mode
@@ -87,8 +86,8 @@ data SecuredRoutes mode = SecuredRoutes
   }
   deriving (Generic)
 
-securedHandlers :: Maybe (AccessClaims, ByteString) -> SecuredRoutes (AsServerT App)
-securedHandlers (Just (subjectClaim -> Just userId, _)) = SecuredRoutes
+securedHandlers :: Maybe AccessClaims -> SecuredRoutes (AsServerT App)
+securedHandlers (Just (subjectClaim -> Just userId)) = SecuredRoutes
   { posts = postHandlers
   , comments = commentHandlers
   , users = userHandlers

@@ -7,7 +7,7 @@ module Mocks.AppMock
   ) where
 
 import Control.Monad.State (StateT, runStateT)
-import Data.ByteString.UTF8 (ByteString)
+import Data.ByteString (ByteString)
 import qualified Data.Map as Map
 import Data.Map.Strict (Map)
 import Models.Comment (Comment)

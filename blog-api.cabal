@@ -63,7 +63,6 @@ library
       Stores.PostStore
       Stores.Query
       Stores.TagStore
-      Stores.TokenStore
       Stores.UserStore
       ThrowAll
       Utility
@@ -76,6 +75,7 @@ library
       aeson
     , base >=4.7 && <5
     , base64
+    , bytestring
     , dotenv
     , exceptions
     , fast-logger
@@ -91,7 +91,6 @@ library
     , servant-server
     , text
     , time
-    , utf8-string
     , uuid
     , wai
     , warp
@@ -109,6 +108,7 @@ executable blog-api-exe
     , base >=4.7 && <5
     , base64
     , blog-api
+    , bytestring
     , dotenv
     , exceptions
     , fast-logger
@@ -124,7 +124,6 @@ executable blog-api-exe
     , servant-server
     , text
     , time
-    , utf8-string
     , uuid
     , wai
     , warp
@@ -134,17 +133,18 @@ test-suite blog-api-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      AuthSpec
       Controllers.AuthControllerSpec
       Controllers.CommentControllerSpec
       Controllers.PostControllerSpec
       Controllers.UserControllerSpec
       Generators
       Mocks.AppMock
+      Mocks.Blacklist
       Mocks.CommentStore
       Mocks.Logger
       Mocks.PostStore
       Mocks.TagStore
-      Mocks.TokenStore
       Mocks.UserStore
       Models.EmailSpec
       Models.PasswordSpec
@@ -162,6 +162,7 @@ test-suite blog-api-test
     , base >=4.7 && <5
     , base64
     , blog-api
+    , bytestring
     , containers
     , dotenv
     , exceptions
@@ -180,7 +181,6 @@ test-suite blog-api-test
     , servant-server
     , text
     , time
-    , utf8-string
     , uuid
     , wai
     , warp
