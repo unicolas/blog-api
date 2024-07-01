@@ -1,4 +1,4 @@
-version: '2'
+name: blog-api
 
 services:
   postgres:
@@ -10,3 +10,16 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: blog-api
+    volumes:
+      - postgres-data:/data
+  redis:
+    image: redis:7.2
+    ports:
+      - "6379:6379"
+    restart: on-failure
+    volumes:
+      - redis-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:

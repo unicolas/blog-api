@@ -92,7 +92,7 @@ securedHandlers (Just (subjectClaim -> Just userId)) = SecuredRoutes
   , comments = commentHandlers
   , users = userHandlers
   }
-  where ?requestCtx = RequestContext userId
+  where ?requestCtx = RequestContext {userId}
 securedHandlers _ = throwAll Error.unauthorized
 
 type OrderParam = QueryParam "order" Order

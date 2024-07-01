@@ -9,6 +9,7 @@ import Controllers.AuthController
 import qualified Controllers.AuthController as LoginRequest (LoginRequest(..))
 import qualified Controllers.AuthController as LoginResponse (LoginResponse(..))
 import qualified Data.Map as Map
+import qualified Data.Text as Text
 import Data.Time (getCurrentTime)
 import Data.UUID (nil)
 import Mocks.AppMock (runMock)
@@ -57,8 +58,8 @@ spec = do
       it "Accepts login" $ do
         key <- generateKey
         response <- runMock (login key request) givenUsers
-        LoginResponse.access response `shouldSatisfy` not . null
-        LoginResponse.refresh response `shouldSatisfy` not . null
+        LoginResponse.access response `shouldSatisfy` not . Text.null
+        LoginResponse.refresh response `shouldSatisfy` not . Text.null
 
     context "When providing invalid login credentials" $ do
       let
@@ -77,8 +78,8 @@ spec = do
         now <- getCurrentTime
         let claims = Just (refreshClaims (Id nil) now)
         response <- runMock (refreshToken key claims) givenUsers
-        LoginResponse.access response `shouldSatisfy` not . null
-        LoginResponse.refresh response `shouldSatisfy` not . null
+        LoginResponse.access response `shouldSatisfy` not . Text.null
+        LoginResponse.refresh response `shouldSatisfy` not . Text.null
 
     context "When providing an invalid refresh token" $ do
       it "Fails to refresh token" $ do

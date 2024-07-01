@@ -10,6 +10,7 @@ module AuthClaims
   , refreshClaims
   , refreshSettings
   , subjectClaim
+  , refreshTtl
   ) where
 
 import Control.Lens (Lens', view, (?~))
@@ -29,7 +30,7 @@ import Crypto.JWT
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Function ((&))
 import Data.String (fromString)
-import Data.Time (UTCTime, addUTCTime)
+import Data.Time (NominalDiffTime, UTCTime, addUTCTime)
 import qualified Data.UUID as Uuid
 import GHC.Generics (Generic)
 import Models.Types.Id (Id(..))
@@ -66,7 +67,7 @@ refreshClaims :: Id User -> UTCTime -> RefreshClaims
 refreshClaims (Id userId) issuedAt = emptyClaimsSet
   & claimSub ?~ fromString (Uuid.toString userId)
   & claimIat ?~ NumericDate issuedAt
-  & claimExp ?~ NumericDate (addUTCTime 86400 issuedAt)
+  & claimExp ?~ NumericDate (addUTCTime refreshTtl issuedAt)
   & claimAud ?~ Audience ["refresh"]
   & RefreshClaims
 
@@ -75,3 +76,6 @@ refreshSettings = defaultJWTValidationSettings (== "refresh")
 
 subjectClaim :: HasClaimsSet a => a -> Maybe (Id User)
 subjectClaim c = Id <$> (view claimSub c >>= Uuid.fromText . view string)
+
+refreshTtl :: NominalDiffTime
+refreshTtl = 86400

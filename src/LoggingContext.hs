@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module LoggingContext
@@ -12,7 +13,6 @@ module LoggingContext
   ) where
 
 import Control.Monad (join, void)
-import Data.ByteString.UTF8 (fromString)
 import System.Log.FastLogger
   ( BufSize
   , LogType'(LogFileTimedRotate)
@@ -41,15 +41,15 @@ data LoggingContext = LoggingContext
   }
 
 make :: LoggerConfig -> IO LoggingContext
-make LoggerConfig{..} = do
+make LoggerConfig {..} = do
   (logger, cleanUp) <- newTimedFastLogger formattedTime rotatedLogFile
-  pure LoggingContext{..}
+  pure LoggingContext {..}
   where
     formattedTime = join (newTimeCache timeFormat)
     rotatedLogFile = LogFileTimedRotate
       TimedFileLogSpec
         { timed_log_file = file
-        , timed_timefmt = fromString "%F"
+        , timed_timefmt = "%F"
         , timed_same_timeframe = (==)
         , timed_post_process = void . pure
         }
@@ -59,4 +59,4 @@ defaultBufferSize :: BufSize
 defaultBufferSize = defaultBufSize
 
 defaultTimeFormat :: TimeFormat
-defaultTimeFormat = fromString "%FT%T%z"
+defaultTimeFormat = "%FT%T%z"
