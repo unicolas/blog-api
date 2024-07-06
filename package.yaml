@@ -24,9 +24,11 @@ dependencies:
   - aeson
   - base >= 4.7 && < 5
   - base64
+  - bytestring
   - dotenv
   - exceptions
   - fast-logger
+  - hedis
   - jose
   - lens
   - mtl
@@ -39,7 +41,6 @@ dependencies:
   - text
   - time
   - uuid
-  - utf8-string
   - wai
   - warp
 

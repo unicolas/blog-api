@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -28,6 +28,7 @@ library
       AppContext
       Auth
       AuthClaims
+      CacheContext
       Controllers.Api
       Controllers.AuthController
       Controllers.CommentController
@@ -64,6 +65,7 @@ library
       Stores.TagStore
       Stores.UserStore
       ThrowAll
+      Utility
   other-modules:
       Paths_blog_api
   hs-source-dirs:
@@ -73,9 +75,11 @@ library
       aeson
     , base >=4.7 && <5
     , base64
+    , bytestring
     , dotenv
     , exceptions
     , fast-logger
+    , hedis
     , jose
     , lens
     , mtl
@@ -87,7 +91,6 @@ library
     , servant-server
     , text
     , time
-    , utf8-string
     , uuid
     , wai
     , warp
@@ -105,9 +108,11 @@ executable blog-api-exe
     , base >=4.7 && <5
     , base64
     , blog-api
+    , bytestring
     , dotenv
     , exceptions
     , fast-logger
+    , hedis
     , jose
     , lens
     , mtl
@@ -119,7 +124,6 @@ executable blog-api-exe
     , servant-server
     , text
     , time
-    , utf8-string
     , uuid
     , wai
     , warp
@@ -129,12 +133,14 @@ test-suite blog-api-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      AuthSpec
       Controllers.AuthControllerSpec
       Controllers.CommentControllerSpec
       Controllers.PostControllerSpec
       Controllers.UserControllerSpec
       Generators
       Mocks.AppMock
+      Mocks.Blacklist
       Mocks.CommentStore
       Mocks.Logger
       Mocks.PostStore
@@ -156,10 +162,12 @@ test-suite blog-api-test
     , base >=4.7 && <5
     , base64
     , blog-api
+    , bytestring
     , containers
     , dotenv
     , exceptions
     , fast-logger
+    , hedis
     , hspec
     , jose
     , lens
@@ -173,7 +181,6 @@ test-suite blog-api-test
     , servant-server
     , text
     , time
-    , utf8-string
     , uuid
     , wai
     , warp

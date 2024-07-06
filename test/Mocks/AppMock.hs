@@ -7,6 +7,7 @@ module Mocks.AppMock
   ) where
 
 import Control.Monad.State (StateT, runStateT)
+import Data.ByteString (ByteString)
 import qualified Data.Map as Map
 import Data.Map.Strict (Map)
 import Models.Comment (Comment)
@@ -23,6 +24,7 @@ data Storage = MakeStorage
   , posts :: !(Map (Id Post) (Entity Post))
   , comments :: !(Map (Id Comment) (Entity Comment))
   , tags :: !(Map (Id Post) [Tag])
+  , blacklist :: [ByteString]
   }
 
 type AppMock = StateT Storage IO
@@ -37,6 +39,7 @@ emptyStorage = MakeStorage
   , posts = Map.empty
   , comments = Map.empty
   , tags = Map.empty
+  , blacklist = []
   }
 
 storeFromList :: [(Id model, model)] -> Map (Id model) (Entity model)

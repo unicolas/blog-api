@@ -2,7 +2,7 @@
 
 module DatabaseContext (DatabaseContext(..), make) where
 
-import Data.ByteString.UTF8 (ByteString)
+import Data.ByteString (ByteString)
 import Data.Function ((&))
 import Data.Pool (Pool)
 import Data.Pool as Pool (defaultPoolConfig, newPool, setNumStripes)
